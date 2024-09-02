@@ -89,6 +89,7 @@ BlkPth="resource/img/Block/"
 raw_Grass_img=[]
 Grass_img=[]
 raw_Grass_img.append(pygame.image.load(BlkPth+"Grass_Side.png").convert_alpha())
+raw_Grass_img.append(pygame.image.load(BlkPth+"Grass_Up.png").convert_alpha())
 for i in raw_Grass_img:
     Grass_img.append(pygame.transform.scale(i,(48, 48)))
 raw_Stone_img=[]
@@ -100,6 +101,7 @@ Stone_img.append(pygame.transform.scale(raw_Stone_img[1],(48, 32)))
 raw_Wood_img=[]
 Wood_img=[]
 raw_Wood_img.append(pygame.image.load(BlkPth+"Wood_Side.png").convert_alpha())
+raw_Wood_img.append(pygame.image.load(BlkPth+"Wood_Up.png").convert_alpha())
 for i in raw_Wood_img:
     Wood_img.append(pygame.transform.scale(i,(48, 48)))
 #--角色
@@ -329,11 +331,10 @@ class World(object):
         self.LogType = LogicType
         self.Contain = Blocks
 
-world = World(64,3,5,'w16n35',[])
-
 #-支类
 #--单个方块
 class Block(Blocks):
+    BlockType = {}
     def __init__(self,x,y,z,width,height,depth,type,):
         if type == 0:
             surf = Stone_img[0]
@@ -382,6 +383,7 @@ GameVar.bg = Background((0,0,0),0,0,960,480,empty[0],0)
 GameVar.blocks = Block
 GameVar.blocks=[]
 #-零散的(尽量少)
+world = World(64,3,5,'w16n35',[])
 
 #创建的函数
 
@@ -517,7 +519,6 @@ def element_move():
     #角色移动
     for i in GameVar.chars:
         i.move()
-
 
 #渲染文本
 def renderText(text,cl,A,position,size,fot = fot[0],view = window):
