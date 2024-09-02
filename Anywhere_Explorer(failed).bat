@@ -1,0 +1,1 @@
+﻿cd C:\Self\code_sources\Forest_Explorer-Build && call Forest_Explorer-Build.py
