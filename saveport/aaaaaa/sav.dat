@@ -1,0 +1,18 @@
+TEST 01
+1975/1/1
+exp
+0
+
+char
+Chars(1.75,4,0.5,27,45,26,Char00_img,0,1)
+
+beg_items
+T;
+F;
+D;
+O;
+G;
+I;
+M;
+
+owned_creafter
