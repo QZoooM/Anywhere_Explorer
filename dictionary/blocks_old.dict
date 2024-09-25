@@ -1,0 +1,8 @@
+{
+    'air':0,
+    'grass':1,
+    'stone':2,
+    'wood':3,
+    'dirt':4,
+        
+}

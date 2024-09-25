@@ -1,0 +1,8 @@
+{
+    0:['air',empty,(0,0,0)],
+    1:['grass',Grass_img,(1,1,1)],
+    2:['stone',Stone_img,(1,1,1)],
+    3:['wood',Wood_img,(1,1,1)],
+    4:['dirt',None,(1,1,1)],
+        
+}
