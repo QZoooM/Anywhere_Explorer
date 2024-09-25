@@ -14,24 +14,24 @@
 TO_DO_LIST
 （基本）素材---to do05%
 （基本）渲染帧机制---[Done]
-（基本）界面：---to do50%
+（基本）界面：---to do20%
     开始动画&互动[Done]
     菜单[Done]
     设置界面---to do
     选图界面---to do75%
-    游戏界面(2.5D)---to do30%
+    游戏界面(2.5D)---to do25%
 （基本）
 （基本）元素：
     按钮：
         点击按钮[Done]
         托条&滑动---to do
     探险者··-89%
-    方块·--05%
+    方块---to do
     遮挡物透明化渲染---to do
     （增强）特殊生物：就像Boss一样的
 （基本）镜头移动··-80%
 （基本）将设计背景和方块构成地图的部分(地图前后5;高度3;宽度视情况而定(先128)))---to do
-（基本）地图格式：5*3*16n[Done] --> 16*4*16n --> 16n*4*16n --> 16∞*256*16∞
+（基本）地图格式：5*3*16n --> 16*4*16n --> 16n*4*16n --> 16∞*256*16∞
 （基本）存档系统，世界不可写入，每次都加载初始地图---to do
 （基本）经验与商店系统---to do
 （增强）地图外部储存，可写入---to do
@@ -43,9 +43,19 @@ TO_DO_LIST
 （增强）随机地图16∞*256*16∞设计
 （增强）‘混乱’地图16n*4*16n设计
 '''
+'''
+版本编写思路：
+    以下3个选项可以并存
+    [建设]计划加入新的功能，或者修复存在的大问题，或完成上次为未完成的计划
+    [稳定]将[建设]的变更内容进行整合
+    [优化]更好的算法，提升的帧数，多线程的加入
+    以下3个选项为顺叙单选
+    [特殊]完成重大功能的稳定版本
+    [体验]可以是建设版本，但不作正式发布
+    [发布]前6个版本不含[建设]，前3个版本不含[稳定]，即可发布带或不带[优化]的版本
+'''
 import pygame,random,time,os,threading,math,ast #导入运行库
 from pygame.locals import *
-from math import floor
 pygame.init() #初始化Pygame模块
 #渲染基本信息(非常重要)，也包括基础音频信息，也是程序的默认信息
 class BaseINF(object):
@@ -113,12 +123,16 @@ class BaseINF(object):
         RenderInterval = 1/(basefam+10)
     LoadLastTime = 0
     LoadInterval = EnTkSpd/maxtick/tickspeed #1/1008
+    frampBuffer = []
 #创建窗口（视野）
 pygame.display.set_caption("Anywhere Explorer")
 window_size = (BaseINF.window_x,BaseINF.window_y)
 window = pygame.display.set_mode(window_size)
 #补帧技术(待定)
-#framp_0 = pygame.Surface(window_size)
+framp_0 = pygame.Surface((window_size), pygame.SRCALPHA)
+framp_1 = pygame.Surface((window_size), pygame.SRCALPHA)
+framp_2 = pygame.Surface((window_size), pygame.SRCALPHA)
+framp_3 = pygame.Surface((window_size), pygame.SRCALPHA)
 #导入资源
 print('Load images')
 #-图组
@@ -154,15 +168,10 @@ Shadow_img=[]
 Shadow_img.append(pygame.transform.scale(pygame.image.load(BlkPth+"Shadow.png").convert_alpha(),(48, 48)))
 #--角色
 Char00_img=[]
-Slt_img=[]
-Char00Path="resource/img/Char/"
-Char00_img.append(pygame.image.load(Char00Path+"Char00.png").convert_alpha())
-Char00_img.append(pygame.image.load(Char00Path+"Char00_Body.png").convert_alpha())
-Char00_img.append(pygame.image.load(Char00Path+"Char00_Head.png").convert_alpha())
-Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_0.png").convert_alpha(),(48, 48)))
-Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_0.png").convert_alpha(),(48, 32)))
-Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_1.png").convert_alpha(),(48, 48)))
-Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_1.png").convert_alpha(),(48, 32)))
+Char00Path="resource/img/Char/Char00"
+Char00_img.append(pygame.image.load(Char00Path+".png").convert_alpha())
+Char00_img.append(pygame.image.load(Char00Path+"_Body.png").convert_alpha())
+Char00_img.append(pygame.image.load(Char00Path+"_Head.png").convert_alpha())
 #设置图片透明度
 #image.set_alpha(128)
 #--按钮
@@ -245,7 +254,7 @@ class Background(object):
         self.movespeed = movespeed
     def move(self):
         pass
-    def paint(self):
+    def paint(self,window):
         if world.T_x > 15:
             if GameVar.chars[0].x <= world.T_x - 7.5 and GameVar.chars[0].x >= 7.5:
                 paint_x = (BaseINF.window_x - self.width)*(GameVar.chars[0].x-7.5)/(world.T_x - 15)
@@ -261,21 +270,21 @@ class Background(object):
 
 #--方块(大类)
 class Blocks(object): #48x48,46*32;x-->width,y-->height,z-->depth
-    def __init__(self,ID,name,x,y,z,surf,ckpos,box=(1,1,1)):
+    def __init__(self,ID,name,x,y,z,surf,box=(1,1,1)):
         self.ID = ID
         self.name = name
         self.x = x
         self.y = y
         self.z = z
         self.surf = surf
-        self.ckpos = ckpos
         self.l_x = box[0]
         self.l_y = box[1]
         self.l_z = box[2]
-        self.ptab_abv = self.ptab_fnt = 1
+        self.ptab_abv = 1
+        self.ptab_fnt = 1
         self.paint_x = (self.x - self.l_x/2+0.5)*48
         self.paint_y = BaseINF.window_y - self.y*48 - self.z*32
-    def paint(self):
+    def paint(self,window):
         # paint_x = self.x*48 - self.l_x/2 + 24
         # paint_y = BaseINF.window_y - self.y*48 + self.z*32
         paint_y = self.paint_y
@@ -320,17 +329,17 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
         self.recentBlocks = []
     def hitbox(self): #x&z碰撞判定并限定位移
         scan = 1
-        x = floor(self.x)
-        y = floor(self.y)
-        z = floor(self.z)
+        x = math.floor(self.x)
+        y = math.floor(self.y)
+        z = math.floor(self.z)
         if x!=self.tx or y!=self.ty or z!=self.tz: #载入附近方块
             self.recentBlocks.clear()
             for i in GameVar.blocks:
                 if i.x >= x - scan and i.y >= y - scan and i.z >= z-scan and i.x <= x+scan and i.y <= y+scan and i.z <= z+scan:
                     self.recentBlocks.append(i)
-            self.tx = floor(self.x)
-            self.ty = floor(self.y)
-            self.tz = floor(self.z)
+        self.tx = math.floor(self.x)
+        self.ty = math.floor(self.y)
+        self.tz = math.floor(self.z)
         #碰撞:x26,y40,z16-->x0.45,y0.8,z0.45
         #碰撞点阵箱命名规则:xyz-->ldf(左下前)
         L = self.x - self.box_x/2
@@ -495,7 +504,7 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
             # print(self.tmpList)
             # self.tmpList.clear()
             Chars.basicTimeCount = time.time()
-    def paint(self): #绘制
+    def paint(self,window): #绘制
         if self.lfab == 1:
             if self.faceleft == 0:
                 self.faceleft = 1
@@ -567,14 +576,13 @@ class ButtonCTRL(object):
 
 #--文本绘制
 class Txts(object):
-    def __init__(self,text,cl,A,position,size,fot = fot[0],view = window):
+    def __init__(self,text,cl,A,position,size,fot = fot[0]):
         self.text = text
         self.cl = cl
         self.A = A
         self.position = position
         self.size = size
         self.fot = fot
-        self.view = view
 txts=[]
 
 #Camera类
@@ -593,8 +601,7 @@ class Savings(object): #角色,背包,可用合成表信息存储在sav.dat
         self.FolderName = FolderName
         self.name = name
         self.ChTime = ChTime
-        self.T = self.F = self.D = self.O = self.G = self.I = self.M = self.ChunckFilesList = [] #区块文件列表
-        self.rdWorldList=['T']
+        self.T = self.F = self.D = self.O = self.G = self.I = self.M = self.ChunckFilesList = [] #区块列表
     def scan(self): #扫描存档
         menurd.SavPhs.clear()
         menurd.SavFds.clear()
@@ -651,10 +658,8 @@ class World(object): #区块以及方块信息只存在于WDxxx.ck中
         self.LogType = LogicType
         self.Chuncks = []#列表装列表
         self.ChuncksChangeList = []
-        self.LT=0
-        self.ITV=0.02
-        self.tcpos = None
-    def read(self): #读取世界区块
+    #读取世界区块
+    def read(self):
         with open("saveport/" + GameVar.sav.FolderName + "/Ck/T000.ck") as ck:
             tmpCkNum = -1
             for line in ck.readlines():
@@ -672,26 +677,10 @@ class World(object): #区块以及方块信息只存在于WDxxx.ck中
                 str_inf = line.split(",")
                 for i in str_inf:
                     binf.append(int(i))
-                self.Chuncks[tmpCkNum].contain[binf[3]-tmpCkPos[1]*16][binf[2]][binf[1]-tmpCkPos[0]*16].append(Block(binf[0],binf[1],binf[2],binf[3],tmpCkPos))
-    def load_chunck(self,force=0): #从已载入的区块列表中载入方块
-        if not Times_up(self.LT,self.ITV):
-            return
-        scan = 1 #加载范围，默认为1
-        for i in GameVar.chars:
-            crx = round(i.x/16)
-            crz = round(i.z/16)
-            if force == 1:
-                self.tcpos = None
-            if self.tcpos != (crx,crz): #与上一个坐标不同则重新载入，注意之后可能会发生卡顿!!!
-                GameVar.blocks.clear()
-                for ck in world.Chuncks:
-                    if ck.pos[0] > crx-1-scan and ck.pos[0] < crx+scan and ck.pos[1] > crz-1-scan and ck.pos[1] < crz+scan:
-                        for z in ck.contain[::-1]:
-                            for y in z:
-                                for x in y:
-                                    for blk in x:
-                                        GameVar.blocks.append(blk)
-                self.tcpos = (crx,crz) #更新缓存坐标
+                self.Chuncks[tmpCkNum].contain[binf[3]-tmpCkPos[1]*16][binf[2]][binf[1]-tmpCkPos[0]*16].append(Block(binf[0],binf[1],binf[2],binf[3]))
+                GameVar.blocks.append(Block(binf[0],binf[1],binf[2],binf[3])) #这一步仍然需要
+    def load_chunck(self,chunck_pos):
+        chunck_pos[1]
     def write(self):
         pass
 
@@ -716,55 +705,23 @@ class Chuncks(object):
 #存档世界功能测试--日后移动到适当位置
 #T000为测试的有限地图，F000森林，D000沙漠，O000海洋，G000草原，I000无限，M000混乱
 #They're Temp
-world = World("T",64,3,8,'w16n35')
+world = World("T",64,3,5,'w16n35')
 rdWorldList=['T']
 
 #-支类
 #--单个方块(继承Blocks)
 class Block(Blocks):
     with open("dictionary/blocks.dict") as rawDict:
-        BlockDict=eval(rawDict.read())
-    def __init__(self,ID,x,y,z,ckpos):
-        blkInfList = Block.BlockDict[ID]
-        Blocks.__init__(self,ID,blkInfList[0],x,y,z,blkInfList[1],ckpos,blkInfList[2])
+        BlockDict=ast.literal_eval(rawDict.read())
+    def __init__(self,ID,x,y,z):
+        blkInfList = Block.BlockDict[ID].split(";")
+        Blocks.__init__(self,ID,eval(blkInfList[0]),x,y,z,eval(blkInfList[1]),eval(blkInfList[2]))
 
 #--角色(继承实体Entity)
 class Chars(Entity): #Whole:27x45;Head:27x21;Body:27x24.
     basicTimeCount = 0
-    slt_xz_dict = {0:(1,0),1:(1,-1),2:(0,-1),3:(-1,-1),4:(-1,0),5:(-1,1),6:(0,1),7:(1,1)}
-    slt_y_dict = {0:-1,1:-1,2:0,3:1,4:1}
     def __init__(self,x,y,z,width,height,up,surf,type,life,speed=1,faceleft=0):
         Entity.__init__(self,x,y,z,width,height,up,surf,type,life,speed,faceleft)
-        self.slt_xz = 22.5
-        self.slt_y = 90
-        self.shapab = 1
-        self.slt_pos = None
-    def shapeWorld(self):
-        xz = Chars.slt_xz_dict[floor(self.slt_xz/45)]
-        y = Chars.slt_y_dict[floor(self.slt_y/36)]
-        if floor(self.slt_y/36) == 0:
-            self.slt_pos = (floor(self.x),floor(self.y)-1,floor(self.z))
-        elif floor(self.slt_y/36) == 4:
-            self.slt_pos = (floor(self.x),floor(self.y)+1,floor(self.z))
-        else:
-            self.slt_pos = (floor(self.x)+xz[0],floor(self.y)+y,floor(self.z)+xz[1])
-    def paint_slt(self):
-        paint_y = BaseINF.window_y -(self.slt_pos[1]*48 + self.slt_pos[2]*32)
-        paint_x = self.slt_pos[0]*48
-        if self.x <= world.T_x - 7.5 and self.x >= 7.5:
-            paint_x += (-GameVar.chars[0].x+7.5)*48
-        elif GameVar.chars[0].x > world.T_x - 7.5:
-            paint_x += (15 - world.T_x)*48
-        elif GameVar.chars[0].x < 7.5:
-            pass
-        if self.shapab == 1:
-            i = 2
-        elif self.shapab == 0:
-            i = 0
-        else:
-            return
-        window.blit(Slt_img[i+1],(paint_x,paint_y-32))
-        window.blit(Slt_img[i],(paint_x,paint_y))
 
 #--按钮(继承控制按钮ButtonCTRL)
 class Buttons(ButtonCTRL):
@@ -785,7 +742,7 @@ class Buttons(ButtonCTRL):
         self.surf.blit(pygame.transform.scale(surf,(width,height)),(0,0))
         self.surf.blit(scltext,pos)
         ButtonCTRL.__init__(self,x,y,width,height,self.surf,func,text,txtcl,alpha,rfkey)
-    def paint(self):
+    def paint(self,window):
         self.surf.set_alpha(self.alpha)
         window.blit(self.surf,(self.x,self.y))
 buttons=[] #按钮列表
@@ -793,10 +750,9 @@ buttons=[] #按钮列表
 #使用类属性存储游戏中的变量，以减少全局变量的数量
 class GameVar(object):
     wait = 0 #渲染等待以减少性能消耗
-    bg = Background((0,0,0),0,0,960,480,empty[0],0) #初始的背景配置
-    blocks = [] #方块缓冲区
+    bg = Background((0,0,0),0,0,960,480,empty[0],0)
+    blocks = [] #方块缓冲区(因存储数据需要，可能移除)
     sav = Savings('','','') #存档信息初始化以及寄存位点
-    world = None #地图寄存位点
     chars = [] #角色列表
     tmpchars = [] #角色缓存列表
     lastTime = 0
@@ -804,20 +760,48 @@ class GameVar(object):
     #控制游戏状态
     STATES = {"END_UP":0,"START_UP":1,"MENU":2,"SAV":3,"GAMING":4,"STORE":5,"PAUSE":6,"FLOW_ANIMA":100,}
     state = STATES["START_UP"]
+#-零散的(尽量少)
 
+#创建的函数
 #线程
-class Render_Thread(threading.Thread): #继承父类threading.Thread
-    def __init__(self, threadID, name):
+class fpBuffer_Thread(threading.Thread): #继承父类threading.Thread
+    def __init__(self, threadID, name, ITV=BaseINF.RenderInterval):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
+        self.LT = 0
+        self.ITV = ITV
     def run(self): #把要执行的代码写到run函数里面 线程在创建后会直接运行run函数
         Err_Times = 0 
         while True:
             try:
-                render_window()
+                if not Times_up(self.LT, self.ITV):
+                    continue
+                if len(BaseINF.frampBuffer) == 0:
+                    continue
+                window.blit(BaseINF.frampBuffer[0],(0,0))
+                if len(BaseINF.frampBuffer) == 1:
+                    continue
+                BaseINF.frampBuffer.pop(0)
             except:
-                if Err_Times >= 10:
+                if Err_Times >= 3:
+                    break
+                Err_Times += 1
+        print("Stop Rendering")
+
+class Render_Thread(threading.Thread):
+    def __init__(self, threadID, name, surf):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+        self.surf = surf
+    def run(self):
+        Err_Times = 0 
+        while True:
+            try:
+                render_window(self.surf)
+            except:
+                if Err_Times >= 3:
                     break
                 Err_Times += 1
         print("Stop Rendering")
@@ -859,7 +843,7 @@ class RenderEffect(object):
                 return position
 rendereffect = RenderEffect()
 
-#-独立输入控制器(将要移除)
+#-输入控制器(将要移除)
 class Mvab(object):
     def __init__(self,charmvx_ad,charmvx_mi,charmvy_ad,charmvy_mi):
         self.charmvx_ad = charmvx_ad
@@ -896,66 +880,19 @@ def handle_event():
         elif event.type == WINDOWRESTORED:
             pygame.mixer.unpause()
         #按钮交互[点击后松开]   
-        if menurd.inma == 0: #完成亮屏后才允许操作
+        if menurd.inma == 0:
             return
-        if event.type==pygame.MOUSEMOTION:
-            if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
-                GameVar.chars[0].slt_xz += event.rel[0]*2
-                GameVar.chars[0].slt_y -= event.rel[1]*2
-                if GameVar.chars[0].slt_xz >= 360:
-                    GameVar.chars[0].slt_xz -=360
-                elif GameVar.chars[0].slt_xz < 0:
-                    GameVar.chars[0].slt_xz +=360
-                if GameVar.chars[0].slt_y > 150:
-                    GameVar.chars[0].slt_y = 150
-                elif GameVar.chars[0].slt_y < 30:
-                    GameVar.chars[0].slt_y = 30
-        if event.type == MOUSEBUTTONDOWN:
-            if event.button==1:
-                if GameVar.state == GameVar.STATES["START_UP"] and startrd.dtext == 1: #点击左键切换为运行状态
-                    startrd.dtext = 2
-                    startrd.sttick = 0
-                    startrd.tomn = 0
-                    GameVar.wait = 0
-                if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
-                    ti = None
-                    for i in range(0,len(GameVar.blocks)):
-                        tblk = GameVar.blocks[i]
-                        if (tblk.x,tblk.y,tblk.z) == GameVar.chars[0].slt_pos:
-                            if GameVar.chars[0].shapab == 1:
-                                ti = i
-                                break
-                    if ti == None:
-                        continue
-                    for ck in world.Chuncks:
-                        if ck.pos == tblk.ckpos:
-                            ck.contain[tblk.z-tblk.ckpos[1]*16][tblk.y][tblk.x-tblk.ckpos[0]*16].pop(0)
-                    GameVar.blocks.pop(ti)
-            if event.button==3:
-                if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
-                    pos = GameVar.chars[0].slt_pos
-                    tshp = GameVar.chars[0].shapab
-                    for i in range(0,len(GameVar.blocks)):
-                        tblk = GameVar.blocks[i]
-                        if (tblk.x,tblk.y,tblk.z) == pos:
-                            GameVar.chars[0].shapab = 0
-                            break
-                    if pos[1] > 15:
-                        GameVar.chars[0].shapab = 0
-                        print("The Y limitation is 15")
-                    if GameVar.chars[0].shapab == 1:
-                        pos = GameVar.chars[0].slt_pos
-                        tckpos = (floor(pos[0]/16),floor(pos[2]/16))
-                        for ck in world.Chuncks:
-                            if ck.pos == tckpos:
-                                ck.contain[pos[2]-tckpos[1]*16][pos[1]][pos[0]-tckpos[0]*16].append(Block(2,pos[0],pos[1],pos[2],tckpos))
-                        GameVar.blocks.clear()
-                        world.load_chunck(1)
-                    GameVar.chars[0].shapab = tshp
         if event.type == MOUSEBUTTONUP and event.button==1:
             for i in buttons:
                 if event.pos[0] > i.x and event.pos[0] < i.x+i.width and event.pos[1] > i.y and event.pos[1] <i.y+i.height:
                     exec(i.func)
+        #点击左键切换为运行状态
+        if event.type == MOUSEBUTTONDOWN and event.button==1:
+            if GameVar.state == GameVar.STATES["START_UP"] and startrd.dtext == 1:
+                startrd.dtext = 2
+                startrd.sttick = 0
+                startrd.tomn = 0
+                GameVar.wait = 0
         if event.type==KEYDOWN:
             for i in buttons:
                 if i.rfkey == event.key:
@@ -973,11 +910,6 @@ def handle_event():
                         i.ftab = 1
                     if event.key == K_d:
                         i.rtab = 1
-                    if event.key == K_v:
-                        if i.shapab == 1:
-                            i.shapab = 0
-                        elif i.shapab == 0:
-                            i.shapab = 1
         if event.type==KEYUP:
             for i in GameVar.chars:
                 if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
@@ -994,8 +926,8 @@ def handle_event():
 
 #游戏内信息处理
 def InGameProc():
-    world.load_chunck()
-    GameVar.chars[0].shapeWorld()
+    for i in GameVar.chars:
+        world.load_chunck((i.x,i.z))
 
 #碰撞侦测
 
@@ -1004,6 +936,7 @@ def check_hit():
     #角色碰撞
     for i in GameVar.chars:
         i.hitbox()
+        # i.gravbox()
 
 #组件移动总线
 def element_move():
@@ -1016,10 +949,6 @@ def element_move():
 #-渲染启动界面
 exec(layout.start[0])
 #-启动界面变量[状态量]（0=就绪/正在执行;1=完成;2=等待///同下）
-'''
-规范：
-???
-'''
 class Startrd(object):
     def __init__(self):
         self.window = 0
@@ -1127,7 +1056,6 @@ class Savrd(object):
         self.tomain = 2
         self.main = 2
         self.tomn = 2
-        self.togm = 2
         self.reading = 2
         self.writing = 2
         self.clean = 2
@@ -1163,6 +1091,7 @@ class Savrd(object):
                 exec(layout.sav[0])
                 self.main = 0
             if self.main == 0:
+                
                 pass
             if self.clean == 0:
                 pass
@@ -1171,12 +1100,6 @@ class Savrd(object):
                 GameVar.state = GameVar.STATES["MENU"]
                 menurd.goto = 1
                 menurd.main = 1
-            if self.togm == 0:
-                #将于此处插入地图选择的判定参数
-                GameVar.state = GameVar.STATES["GAMING"]
-                world.tcpos = None
-                self.togm = 1
-                pass
 savrd = Savrd()
 
 class Gamingrd(object):
@@ -1207,7 +1130,7 @@ class Gamingrd(object):
                 InGameProc()
                 try:
                     if Times_up(self.posLastTime,self.posInterval):
-                        txts[0].text = str((floor(GameVar.chars[0].x),floor(GameVar.chars[0].y),floor(GameVar.chars[0].z)))
+                        txts[0].text = str((math.floor(GameVar.chars[0].x),math.floor(GameVar.chars[0].y),math.floor(GameVar.chars[0].z)))
                         self.posLastTime = time.time()
                 except:
                     pass
@@ -1223,66 +1146,68 @@ class Gamingrd(object):
                 self.tomn = 1
             if self.tops == 0:
                 exec(layout.pause[0])
-                self.run = 1
                 self.tops = 1
                 self.paus = 0
             if self.paus == 0:#执行暂停
                 return
             if self.paus == 1:
                 exec(layout.gaming[0])
-                self.run = 0
                 self.paus = 2
 gamingrd = Gamingrd()
 
 #元素绘制
+
 #-组件绘制
-def rendercomponents():
-    for i in buttons: #按钮绘制
-        i.paint()
+def rendercomponents(surf):
+    #--按钮绘制
+    for i in buttons:
+        i.paint(surf)
 
 #渲染文本
-def renderText(text,cl,A,position,size,fot = fot[0],view = window):
+def renderText(text,cl,A,position,size,fot = fot[0],surf = window):
     my_font = pygame.font.Font(fot,size)
     text = my_font.render(text,True,cl).convert_alpha()
     text.set_alpha(A)
-    view.blit(text,position)
+    surf.blit(text,position)
 
-def renderTexts():
+def renderTexts(surf):
     for i in txts:
-        renderText(i.text,i.cl,i.A,i.position,i.size,i.fot,i.view)
+        renderText(i.text,i.cl,i.A,i.position,i.size,i.fot,surf)
 
 #渲染背景
-def renderBG():
+def renderBG(surf):
     i = GameVar.bg
-    window.fill(i.fill_cl)
+    surf.fill(i.fill_cl)
     if GameVar.state == GameVar.STATES["GAMING"]:
-        i.paint()
+        i.paint(surf)
     else:
-        window.blit(i.surf,(i.x,i.y))
+        surf.blit(i.surf,(i.x,i.y))
 
 #渲染方块
-def renderBlocks():
+def renderBlocks(surf):
     if startrd.window != 0 and GameVar.state == GameVar.STATES["START_UP"]:
         for i in range(0,15):
-            window.blit(Stone_img[1],(0 + i*48,166))
+            surf.blit(Stone_img[1],(0 + i*48,166))
         for i in range(0,15):
             for j in range(0,7):  
-                window.blit(Stone_img[0],(0 + i*48,198 + j*48))
+                surf.blit(Stone_img[0],(0 + i*48,198 + j*48))
     if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
-        scan_x = 14 #14
-        scan_y = 7 #7
-        for i in GameVar.blocks:
-            if i.x >= GameVar.chars[0].x-scan_x-1 and i.x <= GameVar.chars[0].x+scan_x and i.z >= GameVar.chars[0].z-scan_y-1 and i.z <= GameVar.chars[0].z+scan_y:
-                i.paint()
+        # for i in GameVar.blocks: #此处暂时保留
+        #     i.paint()
+        for c in world.Chuncks:
+            for z in c.contain[::-1]:
+                for y in z:
+                    for x in y:
+                        for blk in x:
+                            blk.paint(surf)
     
 #渲染角色
-def renderChars():
+def renderChars(surf):
     for i in GameVar.chars:
-        i.paint()
-        i.paint_slt()
+        i.paint(surf)
 
 #-游戏内图层渲染先后(仅仅针对实体和方块)
-def TrueRenderGameEngine():
+def TrueRenderGameEngine(surf):
     print("TrueRenderEngine is on building")
     # for i in GameVar.blocks:
     #     if 1:
@@ -1290,9 +1215,9 @@ def TrueRenderGameEngine():
 
 
 #元素绘制总线
-def renderelement():
-    rendercomponents()
-    renderTexts()
+def renderelement(surf):
+    rendercomponents(surf)
+    renderTexts(surf)
 
 #-渲染控制总线
 def render_control():
@@ -1303,17 +1228,18 @@ def render_control():
         gamingrd.render()
 
 #-渲染窗口总线
-def render_window():
+def render_window(surf):
     if Times_up(BaseINF.RenderLastTime,BaseINF.RenderInterval):
         BaseINF.RenderLastTime = time.time()
         if GameVar.wait == 0: #此if便于停止
-            renderBG()
-            renderBlocks()
-            renderChars()
-            # TrueRenderGameEngine()
-            renderelement()
-            # renderText("PFS:%s"%BaseINF.fps,(50,255,0),255,(345,0),15,fot[1])
+            renderBG(surf)
+            renderBlocks(surf)
+            renderChars(surf)
+            # TrueRenderGameEngine(surf)
+            renderelement(surf)
+            # renderText("PFS:%s"%BaseINF.fps,(50,255,0),255,(345,0),15,fot[1],surf)
             #帧更新
+            BaseINF.frampBuffer.append(surf)
             pygame.display.update()
             BaseINF.tfps += 1
 
@@ -1321,6 +1247,8 @@ def render_window():
 def Load_():
     if Times_up(BaseINF.LoadLastTime,BaseINF.LoadInterval):
         BaseINF.LoadLastTime = time.time()
+        #方块信息载入
+
         #碰撞侦测
         check_hit()
         #组件移动
@@ -1333,23 +1261,30 @@ def Load_():
         BaseINF.fps = BaseINF.tfps
         print(BaseINF.fps)
         BaseINF.tfps = 0
-
 #加入线程并启动
-thread_render_window = Render_Thread(1,"render_window")
-thread_render_window_2 = Render_Thread(2,"render_window")
-thread_render_window.start()
-#time.sleep(BaseINF.RenderInterval/2)
-#thread_render_window_2.start()
-
+thread_fpBuffer = fpBuffer_Thread(1,"fpBuffer",)
+thread_render_window_0 = Render_Thread(0,"render_window",framp_0)
+thread_render_window_1 = Render_Thread(1,"render_window",framp_1)
+thread_render_window_2 = Render_Thread(2,"render_window",framp_2)
+thread_render_window_3 = Render_Thread(3,"render_window",framp_3)
+thread_fpBuffer.start()
+thread_render_window_0.start()
+# time.sleep(BaseINF.RenderInterval/4)
+thread_render_window_1.start()
+# time.sleep(BaseINF.RenderInterval/4)
+thread_render_window_2.start()
+# time.sleep(BaseINF.RenderInterval/4)
+thread_render_window_3.start()
 #统一的终止操作(预计移除)
 def IF_END_UP_GAME():
     if GameVar.state == GameVar.STATES["END_UP"]:
         pygame.quit()
         exit()
-
-#总线
+#总线(尽量简洁)
 while True:
     #操作侦测
     handle_event()
     #加载
     Load_()
+    #渲染窗口
+    #render_window()
