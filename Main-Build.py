@@ -23,9 +23,10 @@ TO_DO_LIST
 （基本）
 （基本）元素：
     按钮：
-        点击按钮[Done]
+        点击按钮Buttons[Done]
         托条&滑动---to do
-    探险者··-89%
+        游戏内物品选择框ItemBar---to do
+    探险者··-95%
     方块·--05%
     遮挡物透明化渲染---to do
     （增强）特殊生物：就像Boss一样的
@@ -43,10 +44,10 @@ TO_DO_LIST
 （增强）随机地图16∞*256*16∞设计
 （增强）‘混乱’地图16n*4*16n设计
 '''
-import pygame,random,time,os,threading,math,ast #导入运行库
+import pygame,random,time,os,threading
 from pygame.locals import *
 from math import floor
-pygame.init() #初始化Pygame模块
+pygame.init()
 #渲染基本信息(非常重要)，也包括基础音频信息，也是程序的默认信息
 class BaseINF(object):
     fps = tfps = 0
@@ -68,44 +69,30 @@ class BaseINF(object):
     #导入用户配置信息
     try:
         with open('config/cfg.ini') as cfg:
-            L = 1
-            for line in cfg.readlines():
+            L = cfg.readlines()
+            for i in range(len(L)):
                 try:
-                    line = float(line.strip('\n'))
+                    L[i] = float(L[i].strip('\n'))
                 except:
                     pass
-                if L == 2:
-                    basefam = line
-                elif L == 3:
-                    basetick = line
-                elif L == 4:
-                    EnTkSpd = line
-                elif L == 5:
-                    maxtick = line
-                elif L == 6:
-                    tickspeed = line
-                elif L == 7:
-                    famcount = line
-                elif L == 8:
-                    window_x = line
-                elif L == 9:
-                    window_y = line
-                elif L == 10:
-                    transparency = line
-                elif L == 11:
-                    flowanime = line
-                elif L == 12:
-                    vol = line
-                elif L == 13:
-                    ado_on = line
-                elif L == 14:
-                    ado_mt = line
-                elif L == 15:
-                    break
-                L += 1
-    except:
+            basefam = L[1]
+            basetick = L[2]
+            EnTkSpd = L[3]
+            maxtick = L[4]
+            tickspeed = L[5]
+            famcount = L[6]
+            window_x = L[7]
+            window_y = L[8]
+            transparency = L[9]
+            flowanime = L[10]
+            vol = L[11]
+            ado_on = L[12]
+            ado_mt = L[13]
+    except IOError:
         print("This User has yet created cfg.ini, automatically run with default config.")
-    #时间计算使用的变量(不会改变)
+    except:
+        print("Ignore this problem!")
+    #时间计算使用的变量(代码不会改变)
     RenderLastTime = 0
     if basefam == -1:
         RenderInterval = 0
@@ -113,11 +100,10 @@ class BaseINF(object):
         RenderInterval = 1/(basefam+10)
     LoadLastTime = 0
     LoadInterval = EnTkSpd/maxtick/tickspeed #1/1008
-#创建窗口（视野）
 pygame.display.set_caption("Anywhere Explorer")
 window_size = (BaseINF.window_x,BaseINF.window_y)
 window = pygame.display.set_mode(window_size)
-#补帧技术(待定)
+#补帧技术(效果极差，需要更换算法)
 #framp_0 = pygame.Surface(window_size)
 #导入资源
 print('Load images')
@@ -135,7 +121,6 @@ raw_Grass_img=[]
 Grass_img=[]
 raw_Grass_img.append(pygame.image.load(BlkPth+"Grass_Side.png").convert_alpha())
 raw_Grass_img.append(pygame.image.load(BlkPth+"Grass_Up.png").convert_alpha())
-#for i in raw_Grass_img:
 Grass_img.append(pygame.transform.scale(raw_Grass_img[0],(48, 48)))
 Grass_img.append(pygame.transform.scale(raw_Grass_img[1],(48, 32)))
 raw_Stone_img=[]
@@ -163,8 +148,6 @@ Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_0.png").
 Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_0.png").convert_alpha(),(48, 32)))
 Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_1.png").convert_alpha(),(48, 48)))
 Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_1.png").convert_alpha(),(48, 32)))
-#设置图片透明度
-#image.set_alpha(128)
 #--按钮
 BtnPath="resource/img/Button/"
 empty=[]
@@ -175,6 +158,7 @@ raw_Btn_img.append(pygame.image.load(BtnPath+"Button0.png"))
 for i in raw_Btn_img:
     Btn_img.append(pygame.transform.scale(i,(144, 48)))
 Btn_img.append(pygame.image.load(BtnPath+"Box_ui.png"))
+Btn_img.append(pygame.transform.scale(pygame.image.load(BtnPath+"slt_bar.png"),(36,36)))
 
 #-音频
 print('Load audio')
@@ -199,7 +183,6 @@ for i in fotList:
     fot.append(fotPath+i+".ttf")
 print('Done!')
 pygame.display.set_icon(Char00_img[0])
-#创建的对象/变量
 #-类概括
 '''
 类-主类-支类
@@ -208,10 +191,12 @@ pygame.display.set_icon(Char00_img[0])
   |-背景=Background
   |-方块(主)=Blocks
   |   |-方块(支)=Block
-  |-角色=Chars
+  |-实体=Entity
+  |   |-角色=Chars
   |-控制按钮=ButtonCTRL
   |   |-点击式按钮=Buttons
   |   |-拖动滑块=None
+  |   |-游戏内物品选择框=ItemBar
   |-文本=Txts
   |-Camera=Camera
   |-存档=Savings
@@ -515,22 +500,6 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
                 paint_x = self.x*48 - self.width/2
         pygame.draw.ellipse(window,(75,75,75),(paint_x+2-(self.y-1)*0.2,BaseINF.window_y - self.z*32 - 54-(self.y-1)*0.07,self.width-1+(self.y-1)*0.4,16+(self.y-1)*0.14))
         window.blit(self.surf[0],(paint_x,BaseINF.window_y - self.z*32 - (self.y-1)*48 - self.height + 1))
-    def gravbox(self): #y轴碰撞判定(防掉底)(已转移至hitbox函数，将要移除)
-        # # print(str(self.felling)+'---'+str(self.v_y)) #For test
-        # for recentBlock in self.recentBlocks:
-        #     if recentBlock == None:
-        #         self.felling = 1
-        #     if recentBlock.y <= self.y-0.4 and recentBlock.x == self.tx and recentBlock.z == self.tz:
-        #         if self.y > recentBlock.y+1:
-        #             self.felling = 1
-        #         if self.y == recentBlock.y+1:
-        #             self.felling = 0
-        #             self.v_z = 0
-        #         if self.y < recentBlock.y+1:
-        #             self.felling = 0
-        #             self.v_z = 0
-        #             self.y = recentBlock.y+1
-        pass
     def move(self):
         if self.bkab == 1:
             if self.bkuab == 0:
@@ -603,32 +572,20 @@ class Savings(object): #角色,背包,可用合成表信息存储在sav.dat
             if not os.path.isfile(fd):
                 menurd.SavPhs.append(fd)
                 with open('saveport/'+ fd + '/sav.dat') as s:
-                    L = 1
-                    for line in s.readlines():
-                        line=line.strip('\n')
-                        if L == 1:
-                            self.name = line
-                        if L == 2:
-                            self.ChTime = line
-                        if L == 3:
-                            break
-                        L += 1
+                    line = s.readlines()
+                    for i in range(len(line)):
+                        line[i]=line[i].strip('\n')
+                    self.name = line[0]
+                    self.ChTime = line[1]
                 menurd.SavFds.append(self.name + '   ' + self.ChTime)
     def load(self): #扫描选中的存档
         aim = self.FolderName = savrd.slt_sav
         with open('saveport/'+ aim + '/sav.dat') as s:
-                    L = 1
-                    for line in s.readlines():
-                        line=line.strip('\n')
-                        if L == 1:
-                            self.name = line
-                        if L == 2:
-                            self.ChTime = line
-                        if L == 3:
-                            break
-                        if L == 4:
-                            pass
-                        L += 1
+                    line = s.readlines()
+                    for i in range(len(line)):
+                        line[i]=line[i].strip('\n')
+                    self.name = line[0]
+                    self.ChTime = line[1]
         self.ChunckFilesList = os.listdir('saveport/'+ aim + '/Ck/')
         print(self.ChunckFilesList)
         for i in self.ChunckFilesList:
@@ -655,9 +612,9 @@ class World(object): #区块以及方块信息只存在于WDxxx.ck中
         self.ITV=0.02
         self.tcpos = None
     def read(self): #读取世界区块
-        with open("saveport/" + GameVar.sav.FolderName + "/Ck/T000.ck") as ck:
+        with open("saveport/" + GameVar.sav.FolderName + "/Ck/T000.ck") as ckf:
             tmpCkNum = -1
-            for line in ck.readlines():
+            for line in ckf.readlines():
                 line = line.strip('\n')
                 if line == "":
                     continue
@@ -665,7 +622,7 @@ class World(object): #区块以及方块信息只存在于WDxxx.ck中
                     line = line.replace("chunck","")
                     inf = line.split(";")
                     exec("self.Chuncks.append(Chuncks(%s,(%s)))"%(inf[0], inf[1]))
-                    tmpCkPos = ast.literal_eval("(%s)"%inf[1])
+                    tmpCkPos = eval("(%s)"%inf[1])
                     tmpCkNum += 1
                     continue
                 binf = []
@@ -684,7 +641,7 @@ class World(object): #区块以及方块信息只存在于WDxxx.ck中
                 self.tcpos = None
             if self.tcpos != (crx,crz): #与上一个坐标不同则重新载入，注意之后可能会发生卡顿!!!
                 GameVar.blocks.clear()
-                for ck in world.Chuncks:
+                for ck in self.Chuncks:
                     if ck.pos[0] > crx-1-scan and ck.pos[0] < crx+scan and ck.pos[1] > crz-1-scan and ck.pos[1] < crz+scan:
                         for z in ck.contain[::-1]:
                             for y in z:
@@ -693,23 +650,22 @@ class World(object): #区块以及方块信息只存在于WDxxx.ck中
                                         GameVar.blocks.append(blk)
                 self.tcpos = (crx,crz) #更新缓存坐标
     def write(self):
-        pass
+        with open("saveport/%s/Ck/T000.ck"%GameVar.sav.FolderName,"w") as ckf:
+            for ck in self.Chuncks:
+                ckf.write("chunck%s;%s,%s\n"%(ck.ID,ck.pos[0],ck.pos[1]))
+                for z in ck.contain[::-1]:
+                    for y in z:
+                        for x in y:
+                            for blk in x:
+                                ckf.write("%s,%s,%s,%s\n"%(blk.ID,blk.x,blk.y,blk.z))
+                ckf.write("\n")
 
 #区块类用于统一管理方块
 class Chuncks(object):
     def __init__(self,ID,pos):
         self.ID = ID
         self.pos = pos #坐标(便于定位)
-        self.contain = [] #创建一个不存在重复对象的列表(先前的问题已经解决)
-        for z in range(0,16): #创建不重不漏的16个列表z
-            self.contain.append([])
-        for y in range(0,16): #在每个列表z中，创建不重不漏的16个列表y
-            for z in range(0,16):
-                self.contain[y].append([])
-        for x in range(0,16): #在每个列表z中的每个列表y中，创建不重不漏的16个列表x
-            for y in range(0,16):
-                for z in range(0,16):
-                    self.contain[y][x].append([])
+        self.contain = create_list(3,16) #创建一个不存在重复对象的列表(先前的问题已经解决)
     def TidyUp(self): #自我整理功能(这是个多余的功能，将移除或者转化为新的功能)
         pass
 
@@ -739,6 +695,26 @@ class Chars(Entity): #Whole:27x45;Head:27x21;Body:27x24.
         self.slt_y = 90
         self.shapab = 1
         self.slt_pos = None
+    def paint(self): #绘制
+        if self.lfab == 1:
+            if self.faceleft == 0:
+                self.faceleft = 1
+                self.surf[0] = pygame.transform.flip(self.surf[0],1,0)
+        if self.rtab == 1:
+            if self.faceleft == 1:
+                self.faceleft = 0
+                self.surf[0] = pygame.transform.flip(self.surf[0],1,0)
+        if world.T_x == -1:
+            paint_x = 360 - self.width/2
+        elif world.T_x > 15:
+            if self.x <= world.T_x - 7.5 and self.x >= 7.5:
+                paint_x = 360 - self.width/2
+            elif self.x > world.T_x - 7.5:
+                paint_x = (self.x - world.T_x + 15)*48 - self.width/2
+            elif self.x < 7.5:
+                paint_x = self.x*48 - self.width/2
+        pygame.draw.ellipse(window,(75,75,75),(paint_x+2-(self.y-1)*0.2,BaseINF.window_y - self.z*32 - 54-(self.y-1)*0.07,self.width-1+(self.y-1)*0.4,16+(self.y-1)*0.14))
+        window.blit(self.surf[0],(paint_x,BaseINF.window_y - self.z*32 - (self.y-1)*48 - self.height + 1))
     def shapeWorld(self):
         xz = Chars.slt_xz_dict[floor(self.slt_xz/45)]
         y = Chars.slt_y_dict[floor(self.slt_y/36)]
@@ -769,7 +745,7 @@ class Chars(Entity): #Whole:27x45;Head:27x21;Body:27x24.
 #--按钮(继承控制按钮ButtonCTRL)
 class Buttons(ButtonCTRL):
     def __init__(self,x,y,width,height,surf,func="",text="",txtcl=(0,0,0),alpha=250,rfkey=None):
-        self.surf = pygame.Surface((width,height),pygame.SRCALPHA)
+        self.surf = pygame.Surface((width,height),pygame.SRCALPHA) #先一步存储已经渲染好的按钮
         self.surf.fill((0,0,0,0))
         my_font = pygame.font.Font(fot[1],round(height*0.5))
         text = my_font.render(text,True,(50,50,50))
@@ -790,6 +766,27 @@ class Buttons(ButtonCTRL):
         window.blit(self.surf,(self.x,self.y))
 buttons=[] #按钮列表
 
+class ItemBar(object):
+    def __init__(self,location,boxNum,surf,alpha=255,rfkey=K_e):
+        self.location = location
+        if boxNum < 4:
+            self.boxNum = 4
+        elif boxNum > 9:
+            self.boxNum = 9
+        else:
+            self.boxNum = boxNum
+        self.alpha = alpha
+        self.rfkey = rfkey
+        self.pos = ((BaseINF.window_x-36*self.boxNum)/2,BaseINF.window_y-36)
+        self.slt = 0
+        #先一步存储已经渲染好的物品栏
+        self.surf = pygame.Surface((36*self.boxNum,36),pygame.SRCALPHA)
+        for i in range(0,self.boxNum):
+            self.surf.blit(surf[2],(i*36,0))
+    def paint(self):
+        window.blit(self.surf,self.pos)
+itembar=[]
+        
 #使用类属性存储游戏中的变量，以减少全局变量的数量
 class GameVar(object):
     wait = 0 #渲染等待以减少性能消耗
@@ -811,21 +808,37 @@ class Render_Thread(threading.Thread): #继承父类threading.Thread
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
+        self.stop_event = threading.Event()
     def run(self): #把要执行的代码写到run函数里面 线程在创建后会直接运行run函数
         Err_Times = 0 
         while True:
+            # render_window() #For Test
             try:
+                pass
                 render_window()
+            except TypeError:
+                pass
+            except IndexError:
+                pass
             except:
                 if Err_Times >= 10:
                     break
                 Err_Times += 1
         print("Stop Rendering")
+    def stop(self):
+        self.stop_event.set()
 
 #获取日期
 def Get_date():
     t = time.localtime()
     return "%s/%s/%s" %(t.tm_year, t.tm_mon, t.tm_mday)
+
+#递归列表powered by seija
+def create_list(depth,size):
+    if depth == 0:
+        return[]
+    else:
+        return[create_list(depth - 1, size) for _ in range(size)]
 
 #工具方法-判断时间间隔是否到了
 def Times_up(lastTime,interval):
@@ -961,8 +974,8 @@ def handle_event():
                 if i.rfkey == event.key:
                     exec(i.func)
             #根据键盘的操作控制角色的坐标并触发相应的动画-输入控制器-预期WASD和箭头两种控制选项
-            for i in GameVar.chars:
-                if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
+            if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
+                for i in GameVar.chars:
                     if event.key == K_SPACE:
                         i.v_y = 0.0142
                     if event.key == K_w:
@@ -979,8 +992,8 @@ def handle_event():
                         elif i.shapab == 0:
                             i.shapab = 1
         if event.type==KEYUP:
-            for i in GameVar.chars:
-                if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
+            if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
+                for i in GameVar.chars:
                     if event.key == K_w:
                         i.bkab = 0
                     if event.key == K_a:
@@ -989,8 +1002,6 @@ def handle_event():
                         i.ftab = 0
                     if event.key == K_d:
                         i.rtab = 0
-        #
-        #按下ESC进入[PUASE]或者仅唤出暂停的界面
 
 #游戏内信息处理
 def InGameProc():
@@ -998,27 +1009,27 @@ def InGameProc():
     GameVar.chars[0].shapeWorld()
 
 #碰撞侦测
-
 #碰撞侦测总线
 def check_hit():
-    #角色碰撞
-    for i in GameVar.chars:
+    for i in GameVar.chars: #角色碰撞
         i.hitbox()
 
 #组件移动总线
 def element_move():
-    #角色移动
     if GameVar.state != GameVar.STATES["GAMING"]:
         return
-    for i in GameVar.chars:
+    for i in GameVar.chars: #角色移动
         i.move()
 
 #-渲染启动界面
 exec(layout.start[0])
-#-启动界面变量[状态量]（0=就绪/正在执行;1=完成;2=等待///同下）
+#-启动界面变量
 '''
 规范：
-???
+[状态量]
+0=就绪/正在执行;
+1=完成;
+2=等待///同下
 '''
 class Startrd(object):
     def __init__(self):
@@ -1216,6 +1227,7 @@ class Gamingrd(object):
                 GameVar.tmpchars += GameVar.chars
                 GameVar.chars.clear()
                 GameVar.blocks.clear()
+                world.write()
                 world.Chuncks.clear()
                 GameVar.state = GameVar.STATES["MENU"]
                 menurd.goto = 1
@@ -1237,7 +1249,9 @@ gamingrd = Gamingrd()
 #元素绘制
 #-组件绘制
 def rendercomponents():
-    for i in buttons: #按钮绘制
+    for i in itembar:
+        i.paint()
+    for i in buttons:
         i.paint()
 
 #渲染文本
@@ -1321,17 +1335,14 @@ def render_window():
 def Load_():
     if Times_up(BaseINF.LoadLastTime,BaseINF.LoadInterval):
         BaseINF.LoadLastTime = time.time()
-        #碰撞侦测
-        check_hit()
-        #组件移动
-        element_move()
-        #渲染控制
-        render_control()
-        #帧率计算(日后移到合适位置)
+        check_hit() #碰撞侦测
+        element_move() #组件移动
+        render_control() #渲染控制
+    #帧率计算(日后移到合适位置)
     if Times_up(BaseINF.fpsLT,BaseINF.fpsITV):
         BaseINF.fpsLT = time.time()
         BaseINF.fps = BaseINF.tfps
-        print(BaseINF.fps)
+        # print(BaseINF.fps)
         BaseINF.tfps = 0
 
 #加入线程并启动
@@ -1349,7 +1360,5 @@ def IF_END_UP_GAME():
 
 #总线
 while True:
-    #操作侦测
-    handle_event()
-    #加载
-    Load_()
+    handle_event() #操作侦测
+    Load_() #加载
