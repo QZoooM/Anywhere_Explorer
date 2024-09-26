@@ -1,18 +1,18 @@
-TEST 01
-1975/1/1
-exp
+TEST
+2024/9/26
+#exp#
 0
 
-char
-Chars(1.75,4,0.5,27,45,26,Char00_img,0,1)
+#char#
+Char00_img
 
-beg_items
-T;
-F;
-D;
-O;
-G;
-I;
-M;
+#worldType#
+T;Chars(1.75,4,0.5,27,45,26,Char00_img,0,1);
+F;Chars(1.75,4,0.5,27,45,26,Char00_img,0,1);
+D;Chars(1.75,4,0.5,27,45,26,Char00_img,0,1);
+O;Chars(1.75,4,0.5,27,45,26,Char00_img,0,1);
+G;Chars(1.75,4,0.5,27,45,26,Char00_img,0,1);
+I;Chars(1.75,4,0.5,27,45,26,Char00_img,0,1);
+M;Chars(1.75,4,0.5,27,45,26,Char00_img,0,1);
 
-owned_creafter
+#owned_creafter#
