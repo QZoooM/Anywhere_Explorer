@@ -138,20 +138,22 @@ Wood_img.append(pygame.transform.scale(raw_Wood_img[1],(48, 32)))
 Shadow_img=[]
 Shadow_img.append(pygame.transform.scale(pygame.image.load(BlkPth+"Shadow.png").convert_alpha(),(48, 48)))
 #--角色
-Char00_img=[]
-Slt_img=[]
 Char00Path="resource/img/Char/"
-Char00_img.append(pygame.image.load(Char00Path+"Char00.png").convert_alpha())
-Char00_img.append(pygame.image.load(Char00Path+"Char00_Body.png").convert_alpha())
-Char00_img.append(pygame.image.load(Char00Path+"Char00_Head.png").convert_alpha())
-Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_0.png").convert_alpha(),(48, 48)))
-Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_0.png").convert_alpha(),(48, 32)))
-Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_1.png").convert_alpha(),(48, 48)))
-Slt_img.append(pygame.transform.scale(pygame.image.load(Char00Path+"slt_1.png").convert_alpha(),(48, 32)))
+Char00_img=[
+    pygame.image.load(Char00Path+"Char00.png").convert_alpha(),
+    pygame.image.load(Char00Path+"Char00_Body.png").convert_alpha(),
+    pygame.image.load(Char00Path+"Char00_Head.png").convert_alpha()
+]
+Slt_img=[
+    pygame.transform.scale(pygame.image.load(Char00Path+"slt_0.png").convert_alpha(),(48, 48)),
+    pygame.transform.scale(pygame.image.load(Char00Path+"slt_0.png").convert_alpha(),(48, 32)),
+    pygame.transform.scale(pygame.image.load(Char00Path+"slt_1.png").convert_alpha(),(48, 48)),
+    pygame.transform.scale(pygame.image.load(Char00Path+"slt_1.png").convert_alpha(),(48, 32))
+]
 #--按钮
 BtnPath="resource/img/Button/"
-empty=[]
-empty.append(pygame.image.load(BtnPath+"empty.png"))
+empty=[pygame.image.load(BtnPath+"empty.png")]
+empty+=empty
 raw_Btn_img=[]
 Btn_img=[]
 raw_Btn_img.append(pygame.image.load(BtnPath+"Button0.png"))
@@ -163,7 +165,7 @@ Btn_img.append(pygame.transform.scale(pygame.image.load(BtnPath+"slt_bar.png"),(
 #-音频
 print('Load audio')
 DA="resource/ado/Dream_Away.mp3"
-def StopThanStartAudio(DA):
+def StartNewAudio(DA):
     if BaseINF.ado_on == 0:
         return
     if pygame.mixer.get_busy() == True:
@@ -174,7 +176,8 @@ def StopThanStartAudio(DA):
         BGM.set_volume(BaseINF.vol)
     else:
         BGM.set_volume(0)
-#-字体
+#-字体(预渲染(针对帧数太低的情况),临时渲染也会保留)
+#考虑是否实现该方法
 print('Load fonts...')
 fotPath = "resource/fot/"
 fotList=["minisimple","web85W"]
@@ -257,12 +260,20 @@ class Blocks(object): #48x48,46*32;x-->width,y-->height,z-->depth
         self.l_x = box[0]
         self.l_y = box[1]
         self.l_z = box[2]
-        self.ptab_abv = self.ptab_fnt = 1
+        self.pt_abv = self.pt_fnt = 1 #是否绘制上or正面
+        self.trsp = 0 #是否透明上or正面
+        self.alpha = 255
         self.paint_x = (self.x - self.l_x/2+0.5)*48
         self.paint_y = BaseINF.window_y - self.y*48 - self.z*32
+    def transp_proc(self):
+        speed = 1
+        if self.trsp == 1:
+            if self.alpha > 50:
+                self.alpha -= 1*speed
+        elif self.trsp == 0:
+            if self.alpha < 255:
+                self.alpha += 1*speed
     def paint(self):
-        # paint_x = self.x*48 - self.l_x/2 + 24
-        # paint_y = BaseINF.window_y - self.y*48 + self.z*32
         paint_y = self.paint_y
         if GameVar.chars[0].x <= world.T_x - 7.5 and GameVar.chars[0].x >= 7.5:
             paint_x = self.paint_x + (-GameVar.chars[0].x+7.5)*48
@@ -270,12 +281,14 @@ class Blocks(object): #48x48,46*32;x-->width,y-->height,z-->depth
             paint_x = self.paint_x + (15 - world.T_x)*48
         elif GameVar.chars[0].x < 7.5:
             paint_x = self.paint_x
-        surf = self.surf
-        if self.ptab_abv == 1:
-            window.blit(surf[0],(paint_x,paint_y))
+        if self.pt_fnt == 1:
+            Shadow_img[0].set_alpha(self.alpha)
+            self.surf[0].set_alpha(self.alpha)
+            window.blit(self.surf[0],(paint_x,paint_y))
             window.blit(Shadow_img[0],(paint_x,paint_y))
-        if self.ptab_fnt == 1:
-            window.blit(surf[1],(paint_x,paint_y-32))
+        if self.pt_abv == 1:
+            self.surf[1].set_alpha(self.alpha)
+            window.blit(self.surf[1],(paint_x,paint_y-32))
 
 #--实体(大类)
 class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
@@ -292,6 +305,8 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
         self.height = height
         self.up = up
         self.surf = surf
+        self.shadow = pygame.Surface((self.width-1,16),pygame.SRCALPHA)
+        pygame.draw.ellipse(self.shadow,(50,50,50),(0,0,self.width-1+(self.y-1)*0.4,16+(self.y-1)*0.14))
         self.type = type
         self.life = life
         self.bkab = self.ftab = self.lfab = self.rtab = 0
@@ -303,7 +318,7 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
         self.v_x = self.v_y = self.v_z = 0
         self.hit_up = self.hit_dw = self.hit_lf = self.hit_rt = None
         self.recentBlocks = []
-    def hitbox(self): #x&z碰撞判定并限定位移
+    def hitbox(self): #x&z碰撞判定并限定位移 (写的很糟糕，重写)
         scan = 1
         x = floor(self.x)
         y = floor(self.y)
@@ -340,11 +355,10 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
         for i in self.recentBlocks:
             if i.y <= self.y - 0.5:
                 BlkA = i.y + i.l_y
-                CON0 = ldf[0] <= i.x + i.l_x and ldf[0] >= i.x and ldf[2] <= i.z + i.l_z and ldf[2] >= i.z
-                CON1 = ldb[0] <= i.x + i.l_x and ldb[0] >= i.x and ldb[2] <= i.z + i.l_z and ldb[2] >= i.z
-                CON2 = rdf[0] <= i.x + i.l_x and rdf[0] >= i.x and rdf[2] <= i.z + i.l_z and rdf[2] >= i.z
-                CON3 = rdb[0] <= i.x + i.l_x and rdb[0] >= i.x and rdb[2] <= i.z + i.l_z and rdb[2] >= i.z
-                if CON0 or CON1 or CON2 or CON3:
+                if (ldf[0] <= i.x + i.l_x and ldf[0] >= i.x and ldf[2] <= i.z + i.l_z and ldf[2] >= i.z
+                    or ldb[0] <= i.x + i.l_x and ldb[0] >= i.x and ldb[2] <= i.z + i.l_z and ldb[2] >= i.z
+                    or rdf[0] <= i.x + i.l_x and rdf[0] >= i.x and rdf[2] <= i.z + i.l_z and rdf[2] >= i.z
+                    or rdb[0] <= i.x + i.l_x and rdb[0] >= i.x and rdb[2] <= i.z + i.l_z and rdb[2] >= i.z):
                     if ldf[1] == BlkA or ldb[1] == BlkA or rdf[1] == BlkA or rdb[1] == BlkA:
                         ufell += 1
                     elif ldf[1] < BlkA or ldb[1] < BlkA or rdf[1] < BlkA or rdb[1] < BlkA:
@@ -354,11 +368,10 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
         for i in self.recentBlocks:
             if i.y >= self.y + 0.4:
                 BlkD = i.y
-                CON0 = laf[0] < i.x + i.l_x and laf[0] > i.x and laf[2] < i.z + i.l_z and laf[2] > i.z
-                CON1 = lab[0] < i.x + i.l_x and lab[0] > i.x and lab[2] < i.z + i.l_z and lab[2] > i.z
-                CON2 = raf[0] < i.x + i.l_x and raf[0] > i.x and raf[2] < i.z + i.l_z and raf[2] > i.z
-                CON3 = rab[0] < i.x + i.l_x and rab[0] > i.x and rab[2] < i.z + i.l_z and rab[2] > i.z
-                if CON0 or CON1 or CON2 or CON3:
+                if (laf[0] < i.x + i.l_x and laf[0] > i.x and laf[2] < i.z + i.l_z and laf[2] > i.z
+                    or lab[0] < i.x + i.l_x and lab[0] > i.x and lab[2] < i.z + i.l_z and lab[2] > i.z
+                    or raf[0] < i.x + i.l_x and raf[0] > i.x and raf[2] < i.z + i.l_z and raf[2] > i.z
+                    or rab[0] < i.x + i.l_x and rab[0] > i.x and rab[2] < i.z + i.l_z and rab[2] > i.z):
                     if laf[1] == BlkD or lab[1] == BlkD or raf[1] == BlkD or rab[1] == BlkD:
                         self.v_y = 0
                     elif laf[1] > BlkD or lab[1] > BlkD or raf[1] > BlkD or rab[1] > BlkD:
@@ -386,11 +399,10 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
             for i in self.recentBlocks:
                 if i.x <= self.x - 0.7:
                     BlkR = i.x + i.l_x
-                    CON0 = ldf[1] < i.y + i.l_y and ldf[1] > i.y and ldf[2] < i.z + i.l_z and ldf[2] > i.z
-                    CON1 = ldb[1] < i.y + i.l_y and ldb[1] > i.y and ldb[2] < i.z + i.l_z and ldb[2] > i.z
-                    CON2 = laf[1] < i.y + i.l_y and laf[1] > i.y and laf[2] < i.z + i.l_z and laf[2] > i.z
-                    CON3 = lab[1] < i.y + i.l_y and lab[1] > i.y and lab[2] < i.z + i.l_z and lab[2] > i.z
-                    if CON0 or CON1 or CON2 or CON3:
+                    if (ldf[1] < i.y + i.l_y and ldf[1] > i.y and ldf[2] < i.z + i.l_z and ldf[2] > i.z
+                        or ldb[1] < i.y + i.l_y and ldb[1] > i.y and ldb[2] < i.z + i.l_z and ldb[2] > i.z
+                        or laf[1] < i.y + i.l_y and laf[1] > i.y and laf[2] < i.z + i.l_z and laf[2] > i.z
+                        or lab[1] < i.y + i.l_y and lab[1] > i.y and lab[2] < i.z + i.l_z and lab[2] > i.z):
                         if ldf[0] == BlkR or ldb[0] == BlkR or laf[0] == BlkR or lab[0] == BlkR:
                             self.lfuab += 1
                         elif ldf[0] < BlkR or ldb[0] < BlkR or laf[0] < BlkR or lab[0] < BlkR:
@@ -401,11 +413,10 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
                 for i in self.recentBlocks:
                     if i.x >= self.x - 0.3:
                         BlkL = i.x
-                        CON0 = rdf[1] < i.y + i.l_y and rdf[1] > i.y and rdf[2] < i.z + i.l_z and rdf[2] > i.z
-                        CON1 = rdb[1] < i.y + i.l_y and rdb[1] > i.y and rdb[2] < i.z + i.l_z and rdb[2] > i.z
-                        CON2 = raf[1] < i.y + i.l_y and raf[1] > i.y and raf[2] < i.z + i.l_z and raf[2] > i.z
-                        CON3 = rab[1] < i.y + i.l_y and rab[1] > i.y and rab[2] < i.z + i.l_z and rab[2] > i.z
-                        if CON0 or CON1 or CON2 or CON3:
+                        if (rdf[1] < i.y + i.l_y and rdf[1] > i.y and rdf[2] < i.z + i.l_z and rdf[2] > i.z
+                            or rdb[1] < i.y + i.l_y and rdb[1] > i.y and rdb[2] < i.z + i.l_z and rdb[2] > i.z
+                            or raf[1] < i.y + i.l_y and raf[1] > i.y and raf[2] < i.z + i.l_z and raf[2] > i.z
+                            or rab[1] < i.y + i.l_y and rab[1] > i.y and rab[2] < i.z + i.l_z and rab[2] > i.z):
                             if rdf[0] == BlkL or rdb[0] == BlkL or raf[0] == BlkL or rab[0] == BlkL:
                                 self.rtuab += 1
                             elif rdf[0] > BlkL or rdb[0] > BlkL or raf[0] > BlkL or rab[0] > BlkL:
@@ -415,11 +426,10 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
             for i in self.recentBlocks:
                 if i.z <= self.z - 0.7:
                     BlkB = i.z + i.l_z
-                    CON0 = ldf[1] < i.y + i.l_y and ldf[1] > i.y and ldf[0] < i.x + i.l_x and ldf[0] > i.x
-                    CON1 = laf[1] < i.y + i.l_y and laf[1] > i.y and laf[0] < i.x + i.l_x and laf[0] > i.x
-                    CON2 = raf[1] < i.y + i.l_y and raf[1] > i.y and raf[0] < i.x + i.l_x and raf[0] > i.x
-                    CON3 = rdf[1] < i.y + i.l_y and rdf[1] > i.y and rdf[0] < i.x + i.l_x and rdf[0] > i.x
-                    if CON0 or CON1 or CON2 or CON3:
+                    if (ldf[1] < i.y + i.l_y and ldf[1] > i.y and ldf[0] < i.x + i.l_x and ldf[0] > i.x
+                        or laf[1] < i.y + i.l_y and laf[1] > i.y and laf[0] < i.x + i.l_x and laf[0] > i.x
+                        or raf[1] < i.y + i.l_y and raf[1] > i.y and raf[0] < i.x + i.l_x and raf[0] > i.x
+                        or rdf[1] < i.y + i.l_y and rdf[1] > i.y and rdf[0] < i.x + i.l_x and rdf[0] > i.x):
                         if ldf[2] == BlkB or laf[2] == BlkB or raf[2] == BlkB or rdf[2] == BlkB:
                             self.ftuab += 1
                         elif ldf[2] < BlkB or laf[2] < BlkB or raf[2] < BlkB or rdf[2] < BlkB:
@@ -430,11 +440,10 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
                 for i in self.recentBlocks:
                     if i.z >= self.z - 0.3:
                         BlkF = i.z
-                        CON0 = rdb[1] < i.y + i.l_y and rdb[1] > i.y and rdb[0] < i.x + i.l_x and rdb[0] > i.x
-                        CON1 = ldb[1] < i.y + i.l_y and ldb[1] > i.y and ldb[0] < i.x + i.l_x and ldb[0] > i.x
-                        CON2 = lab[1] < i.y + i.l_y and lab[1] > i.y and lab[0] < i.x + i.l_x and lab[0] > i.x
-                        CON3 = rab[1] < i.y + i.l_y and rab[1] > i.y and rab[0] < i.x + i.l_x and rab[0] > i.x
-                        if CON0 or CON1 or CON2 or CON3:
+                        if (rdb[1] < i.y + i.l_y and rdb[1] > i.y and rdb[0] < i.x + i.l_x and rdb[0] > i.x
+                            or ldb[1] < i.y + i.l_y and ldb[1] > i.y and ldb[0] < i.x + i.l_x and ldb[0] > i.x
+                            or lab[1] < i.y + i.l_y and lab[1] > i.y and lab[0] < i.x + i.l_x and lab[0] > i.x
+                            or rab[1] < i.y + i.l_y and rab[1] > i.y and rab[0] < i.x + i.l_x and rab[0] > i.x):
                             if rdb[2] == BlkF or ldb[2] == BlkF or lab[2] == BlkF or rab[2] == BlkF:
                                 self.bkuab += 1
                             elif rdb[2] > BlkF or ldb[2] > BlkF or lab[2] > BlkF or rab[2] > BlkF:
@@ -480,6 +489,22 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
             # print(self.tmpList)
             # self.tmpList.clear()
             Chars.basicTimeCount = time.time()
+    def move(self):
+        if self.bkab == 1:
+            if self.bkuab == 0:
+                self.z += 0.01*self.speed
+        if self.ftab == 1:
+            if self.ftuab == 0:
+                self.z -= 0.01*self.speed
+        if self.lfab == 1:
+            if self.lfuab == 0:
+                self.x -= 0.01*self.speed
+        if self.rtab == 1:
+            if self.rtuab == 0:
+                self.x += 0.01*self.speed
+        self.x += self.v_x
+        self.y += self.v_y
+        self.z += self.v_z
     def paint(self): #绘制
         if self.lfab == 1:
             if self.faceleft == 0:
@@ -498,24 +523,9 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
                 paint_x = (self.x - world.T_x + 15)*48 - self.width/2
             elif self.x < 7.5:
                 paint_x = self.x*48 - self.width/2
-        pygame.draw.ellipse(window,(75,75,75),(paint_x+2-(self.y-1)*0.2,BaseINF.window_y - self.z*32 - 54-(self.y-1)*0.07,self.width-1+(self.y-1)*0.4,16+(self.y-1)*0.14))
+        self.shadow.set_alpha(255-(self.y-1)/32)
+        window.blit(self.shadow,(paint_x+2,BaseINF.window_y - self.z*32 - 54))
         window.blit(self.surf[0],(paint_x,BaseINF.window_y - self.z*32 - (self.y-1)*48 - self.height + 1))
-    def move(self):
-        if self.bkab == 1:
-            if self.bkuab == 0:
-                self.z += 0.01*self.speed
-        if self.ftab == 1:
-            if self.ftuab == 0:
-                self.z -= 0.01*self.speed
-        if self.lfab == 1:
-            if self.lfuab == 0:
-                self.x -= 0.01*self.speed
-        if self.rtab == 1:
-            if self.rtuab == 0:
-                self.x += 0.01*self.speed
-        self.x += self.v_x
-        self.y += self.v_y
-        self.z += self.v_z
 
 #--控制按钮(大类)
 class ButtonCTRL(object):
@@ -536,14 +546,21 @@ class ButtonCTRL(object):
 
 #--文本绘制
 class Txts(object):
-    def __init__(self,text,cl,A,position,size,fot = fot[0],view = window):
+    def __init__(self,text,cl,A,pos,size,fot = fot[0],view = window):
         self.text = text
         self.cl = cl
         self.A = A
-        self.position = position
+        self.pos = pos
         self.size = size
         self.fot = fot
         self.view = view
+        my_font = pygame.font.Font(fot,size)
+        text = my_font.render(text,True,cl).convert_alpha()
+        self.surf = pygame.Surface(text.get_size(),pygame.SRCALPHA)
+        self.surf.blit(text,(0,0))
+    def paint(self):
+        self.surf.set_alpha(self.A)
+        self.view.blit(self.surf,self.pos)
 txts=[]
 
 #Camera类
@@ -695,7 +712,19 @@ class Chars(Entity): #Whole:27x45;Head:27x21;Body:27x24.
         self.slt_y = 90
         self.shapab = 1
         self.slt_pos = None
-    def paint(self): #绘制
+        self.itemList = create_list(1,36) #36个槽位
+        self.itemListisOpen = 0
+        self.itemSlt = 0
+    def shapeWorld(self):
+        xz = Chars.slt_xz_dict[floor(self.slt_xz/45)]
+        y = Chars.slt_y_dict[floor(self.slt_y/36)]
+        if floor(self.slt_y/36) == 0:
+            self.slt_pos = (floor(self.x),floor(self.y)-1,floor(self.z))
+        elif floor(self.slt_y/36) == 4:
+            self.slt_pos = (floor(self.x),floor(self.y)+1,floor(self.z))
+        else:
+            self.slt_pos = (floor(self.x)+xz[0],floor(self.y)+y,floor(self.z)+xz[1])
+    def paint_body(self):
         if self.lfab == 1:
             if self.faceleft == 0:
                 self.faceleft = 1
@@ -713,17 +742,9 @@ class Chars(Entity): #Whole:27x45;Head:27x21;Body:27x24.
                 paint_x = (self.x - world.T_x + 15)*48 - self.width/2
             elif self.x < 7.5:
                 paint_x = self.x*48 - self.width/2
-        pygame.draw.ellipse(window,(75,75,75),(paint_x+2-(self.y-1)*0.2,BaseINF.window_y - self.z*32 - 54-(self.y-1)*0.07,self.width-1+(self.y-1)*0.4,16+(self.y-1)*0.14))
+        self.shadow.set_alpha(225*(1-(self.y-1)/32))
+        window.blit(self.shadow,(paint_x+2,BaseINF.window_y - self.z*32 - 54))
         window.blit(self.surf[0],(paint_x,BaseINF.window_y - self.z*32 - (self.y-1)*48 - self.height + 1))
-    def shapeWorld(self):
-        xz = Chars.slt_xz_dict[floor(self.slt_xz/45)]
-        y = Chars.slt_y_dict[floor(self.slt_y/36)]
-        if floor(self.slt_y/36) == 0:
-            self.slt_pos = (floor(self.x),floor(self.y)-1,floor(self.z))
-        elif floor(self.slt_y/36) == 4:
-            self.slt_pos = (floor(self.x),floor(self.y)+1,floor(self.z))
-        else:
-            self.slt_pos = (floor(self.x)+xz[0],floor(self.y)+y,floor(self.z)+xz[1])
     def paint_slt(self):
         paint_y = BaseINF.window_y -(self.slt_pos[1]*48 + self.slt_pos[2]*32)
         paint_x = self.slt_pos[0]*48
@@ -741,12 +762,18 @@ class Chars(Entity): #Whole:27x45;Head:27x21;Body:27x24.
             return
         window.blit(Slt_img[i+1],(paint_x,paint_y-32))
         window.blit(Slt_img[i],(paint_x,paint_y))
+    def paint(self):
+        if self.slt_pos[2] > self.z or self.slt_pos[1] < self.y:
+            self.paint_slt()
+            self.paint_body()
+        else:
+            self.paint_body()
+            self.paint_slt()
 
 #--按钮(继承控制按钮ButtonCTRL)
 class Buttons(ButtonCTRL):
     def __init__(self,x,y,width,height,surf,func="",text="",txtcl=(0,0,0),alpha=250,rfkey=None):
         self.surf = pygame.Surface((width,height),pygame.SRCALPHA) #先一步存储已经渲染好的按钮
-        self.surf.fill((0,0,0,0))
         my_font = pygame.font.Font(fot[1],round(height*0.5))
         text = my_font.render(text,True,(50,50,50))
         siz = text.get_size()
@@ -778,15 +805,38 @@ class ItemBar(object):
         self.alpha = alpha
         self.rfkey = rfkey
         self.pos = ((BaseINF.window_x-36*self.boxNum)/2,BaseINF.window_y-36)
-        self.slt = 0
         #先一步存储已经渲染好的物品栏
-        self.surf = pygame.Surface((36*self.boxNum,36),pygame.SRCALPHA)
+        self.bar_surf = pygame.Surface((36*self.boxNum,36),pygame.SRCALPHA)
+        self.cbox_surf = pygame.Surface((36,36),pygame.SRCALPHA)
         for i in range(0,self.boxNum):
-            self.surf.blit(surf[2],(i*36,0))
+            self.bar_surf.blit(surf[2],(i*36,0))
+        pygame.draw.rect(self.cbox_surf,(230,230,230,115),(0,0,36,36),4)
     def paint(self):
-        window.blit(self.surf,self.pos)
+        window.blit(self.bar_surf,self.pos)
+        window.blit(self.cbox_surf,(self.pos[0]+GameVar.chars[0].itemSlt*36,self.pos[1]))
+        for i in range(self.boxNum):
+            try:
+                window.blit(GameVar.chars[0].itemList[i][0].surf,(self.pos[0]+4+i*36,self.pos[1]+4))
+            except:
+                window.blit(empty[0],(self.pos[0]+4+i*36,self.pos[1]+4))
+
 itembar=[]
-        
+
+#物品
+class Items(object):
+    def __init__(self,ID,amount):
+        self.ID = ID
+        self.tmpsurf = self.surf = pygame.transform.scale(Block.BlockDict[ID][1][0],(28,28))
+        self.name = Block.BlockDict[ID][1]
+        self.amount = amount
+        self.tmpamount = None
+    def surf_upd(self):
+        if self.tmpamount != self.amount:
+            self.surf.blit(self.tmpsurf,(0,0))
+            renderText(self.amount,(0,0,255),255,(0,0),10,fot[0],self.surf)
+            self.surf.set_alpha(115)
+            self.tmpamount = self.amount
+
 #使用类属性存储游戏中的变量，以减少全局变量的数量
 class GameVar(object):
     wait = 0 #渲染等待以减少性能消耗
@@ -872,26 +922,15 @@ class RenderEffect(object):
                 return position
 rendereffect = RenderEffect()
 
-#-独立输入控制器(将要移除)
-class Mvab(object):
-    def __init__(self,charmvx_ad,charmvx_mi,charmvy_ad,charmvy_mi):
-        self.charmvx_ad = charmvx_ad
-        self.charmvx_mi = charmvx_mi
-        self.charmvy_ad = charmvy_ad
-        self.charmvy_mi = charmvy_mi
-mvab = Mvab(0,0,0,0)
-
 #设置布局变量类，作为layout.ini的规范
-class Layout(object):
-    def __init__(self,start,menu,sav,store,gaming,pause,option):
-        self.start=start
-        self.menu=menu
-        self.sav=sav
-        self.store=store
-        self.gaming=gaming
-        self.pause=pause
-        self.option=option
-layout = Layout([],[],[],[],[],[],[]) #列表打包导入的layout，通过layout.~[~]调用指令
+class layout(object): #列表打包导入的layout，通过layout.~[~]调用指令
+    start=[]
+    menu=[]
+    sav=[]
+    store=[]
+    gaming=[]
+    pause=[]
+    option=[]
 #按钮测试功能存储
 BtTest=[]
 with open("config/layout.ini") as f: #读取layout.ini，存储各布局初始化的指令，比如：向列表加入背景、按钮、文字
@@ -911,6 +950,16 @@ def handle_event():
         #按钮交互[点击后松开]   
         if menurd.inma == 0: #完成亮屏后才允许操作
             return
+        if event.type==pygame.MOUSEWHEEL:
+            if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
+                if event.y == -1:
+                    GameVar.chars[0].itemSlt += 1
+                elif event.y == 1:
+                    GameVar.chars[0].itemSlt -= 1
+                if GameVar.chars[0].itemSlt >= 9:
+                    GameVar.chars[0].itemSlt -= 9
+                elif GameVar.chars[0].itemSlt <= -1:
+                    GameVar.chars[0].itemSlt += 9
         if event.type==pygame.MOUSEMOTION:
             if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
                 GameVar.chars[0].slt_xz += event.rel[0]*2
@@ -944,10 +993,13 @@ def handle_event():
                         if ck.pos == tblk.ckpos:
                             ck.contain[tblk.z-tblk.ckpos[1]*16][tblk.y][tblk.x-tblk.ckpos[0]*16].pop(0)
                     GameVar.blocks.pop(ti)
+                    GameVar.chars[0].ty = None
             if event.button==3:
                 if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
                     pos = GameVar.chars[0].slt_pos
                     tshp = GameVar.chars[0].shapab
+                    if len(GameVar.chars[0].itemList[GameVar.chars[0].itemSlt]) == 0:
+                        GameVar.chars[0].shapab = 0
                     for i in range(0,len(GameVar.blocks)):
                         tblk = GameVar.blocks[i]
                         if (tblk.x,tblk.y,tblk.z) == pos:
@@ -961,9 +1013,10 @@ def handle_event():
                         tckpos = (floor(pos[0]/16),floor(pos[2]/16))
                         for ck in world.Chuncks:
                             if ck.pos == tckpos:
-                                ck.contain[pos[2]-tckpos[1]*16][pos[1]][pos[0]-tckpos[0]*16].append(Block(2,pos[0],pos[1],pos[2],tckpos))
+                                ck.contain[pos[2]-tckpos[1]*16][pos[1]][pos[0]-tckpos[0]*16].append(Block(GameVar.chars[0].itemList[GameVar.chars[0].itemSlt][0].ID,pos[0],pos[1],pos[2],tckpos))
                         GameVar.blocks.clear()
                         world.load_chunck(1)
+                        GameVar.chars[0].ty = None
                     GameVar.chars[0].shapab = tshp
         if event.type == MOUSEBUTTONUP and event.button==1:
             for i in buttons:
@@ -1003,10 +1056,15 @@ def handle_event():
                     if event.key == K_d:
                         i.rtab = 0
 
-#游戏内信息处理
+#游戏内信息处理(只会在游戏内做的计算IGP)
 def InGameProc():
     world.load_chunck()
     GameVar.chars[0].shapeWorld()
+    for i in GameVar.chars[0].itemList:
+        if len(i) != 0:
+            i[0].surf_upd()
+    for blk in GameVar.blocks:
+        blk.transp_proc()
 
 #碰撞侦测
 #碰撞侦测总线
@@ -1021,9 +1079,13 @@ def element_move():
     for i in GameVar.chars: #角色移动
         i.move()
 
-#-渲染启动界面
+def renderText(text,cl,A,position,size,fot = fot[0],view = window):
+    my_font = pygame.font.Font(fot,size)
+    text = my_font.render(str(text),True,cl).convert_alpha()
+    text.set_alpha(A)
+    view.blit(text,position)
+
 exec(layout.start[0])
-#-启动界面变量
 '''
 规范：
 [状态量]
@@ -1033,30 +1095,28 @@ exec(layout.start[0])
 '''
 class Startrd(object):
     def __init__(self):
-        self.window = 0
+        self.init = 0
         self.dtext = 2
-        self.text = "Click to start!!"
         self.sttick = 0
         self.tomn = 2
     def render(self):
         if GameVar.state == GameVar.STATES["START_UP"]:
-            if self.window == 0 and self.sttick <= 255:
+            if self.init == 0 and self.sttick <= 255:
                 cl = ta = round(self.sttick)
                 GameVar.bg.fill_cl=(cl,cl,cl)
                 for i in buttons:
                     i.alpha = ta
                 self.sttick = self.sttick + 0.8*BaseINF.flowanime
-            elif self.dtext == 2 and self.window == 0:
-                self.window = 1
+            elif self.dtext == 2 and self.init == 0:
+                self.init = 1
                 self.dtext = self.sttick = 0
-                txts.append(Txts(self.text,(255,255,255),255,(150,100),45))
+                txts.append(Txts("Click to start!!",(0,0,0),0,(150,100),45))
             if self.dtext == 0 and self.sttick <= 255:
                 tmptk = round(self.sttick)
-                cl1 = 255 - tmptk
                 ta = tmptk
                 Stone_img[0].set_alpha(ta)
                 Stone_img[1].set_alpha(ta)
-                txts[0].cl = (cl1,cl1,cl1)
+                txts[0].A = ta
                 self.sttick = self.sttick + 0.4*BaseINF.flowanime
             elif self.dtext == 0:
                 self.dtext = 1
@@ -1065,7 +1125,7 @@ class Startrd(object):
                 tmptk = round(self.sttick)
                 cl = 255 - tmptk
                 ta = round(cl/1.2)
-                txts[0].position = rendereffect.vibrating(450,150,100,7,5,1,tmptk)
+                txts[0].pos = rendereffect.vibrating(450,150,100,7,5,1,tmptk)
                 Stone_img[0].set_alpha(ta)
                 Stone_img[1].set_alpha(ta)
                 GameVar.bg.fill_cl=(cl,cl,cl)
@@ -1079,14 +1139,13 @@ class Startrd(object):
                 BG_img[0].set_alpha(0)
                 GameVar.bg.surf = BG_img[0]
                 exec(layout.menu[0])
-                StopThanStartAudio(DA)
+                StartNewAudio(DA)
                 menurd.inma = 0
                 Stone_img[0].set_alpha(255)
                 Stone_img[1].set_alpha(255)
                 self.sttick = 0
 startrd = Startrd()
 
-#-菜单界面变量[状态量]a
 class Menurd(object):
     def __init__(self):
         self.window = 0
@@ -1169,7 +1228,7 @@ class Savrd(object):
                     print('Write Saving Error!\nCheck spell or whether sav.dat&xxx.ck format is correct.')
                     print('You have to create a new Saving,\nbut dont warry, everything will be sattled.')
                 self.writing = 1
-            if self.reading == 1 and self.tomain == 0:
+            if self.tomain == 0:
                 self.tomain = 1
                 exec(layout.sav[0])
                 self.main = 0
@@ -1210,6 +1269,9 @@ class Gamingrd(object):
                     GameVar.tmpchars.clear()
                 else:
                     GameVar.chars.append(Chars(1.75,4,0.5,27,45,26,Char00_img,0,1))
+                    GameVar.chars[0].itemList[0].append(Items(1,-1))
+                    GameVar.chars[0].itemList[1].append(Items(2,-1))
+                    GameVar.chars[0].itemList[2].append(Items(3,-1))
                 exec(layout.gaming[0])
                 self.init = 1
             elif self.init == 1:
@@ -1233,9 +1295,18 @@ class Gamingrd(object):
                 menurd.goto = 1
                 menurd.main = 1
                 self.tomn = 1
+            if self.tosv == 0:
+                GameVar.tmpchars += GameVar.chars
+                GameVar.chars.clear()
+                GameVar.blocks.clear()
+                world.write()
+                world.Chuncks.clear()
+                GameVar.state = GameVar.STATES["SAV"]
+                savrd.tomain = 0
+                self.tosv = 1
             if self.tops == 0:
                 exec(layout.pause[0])
-                self.run = 1
+                self.run = 2
                 self.tops = 1
                 self.paus = 0
             if self.paus == 0:#执行暂停
@@ -1255,15 +1326,9 @@ def rendercomponents():
         i.paint()
 
 #渲染文本
-def renderText(text,cl,A,position,size,fot = fot[0],view = window):
-    my_font = pygame.font.Font(fot,size)
-    text = my_font.render(text,True,cl).convert_alpha()
-    text.set_alpha(A)
-    view.blit(text,position)
-
 def renderTexts():
     for i in txts:
-        renderText(i.text,i.cl,i.A,i.position,i.size,i.fot,i.view)
+        i.paint()
 
 #渲染背景
 def renderBG():
@@ -1276,32 +1341,42 @@ def renderBG():
 
 #渲染方块
 def renderBlocks():
-    if startrd.window != 0 and GameVar.state == GameVar.STATES["START_UP"]:
-        for i in range(0,15):
+    if startrd.init != 0 and GameVar.state == GameVar.STATES["START_UP"]:
+        for i in range(15):
             window.blit(Stone_img[1],(0 + i*48,166))
-        for i in range(0,15):
-            for j in range(0,7):  
+        for i in range(15):
+            for j in range(7):  
                 window.blit(Stone_img[0],(0 + i*48,198 + j*48))
-    if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
-        scan_x = 14 #14
-        scan_y = 7 #7
-        for i in GameVar.blocks:
-            if i.x >= GameVar.chars[0].x-scan_x-1 and i.x <= GameVar.chars[0].x+scan_x and i.z >= GameVar.chars[0].z-scan_y-1 and i.z <= GameVar.chars[0].z+scan_y:
-                i.paint()
-    
+
 #渲染角色
 def renderChars():
     for i in GameVar.chars:
         i.paint()
-        i.paint_slt()
 
-#-游戏内图层渲染先后(仅仅针对实体和方块)
-def TrueRenderGameEngine():
-    print("TrueRenderEngine is on building")
-    # for i in GameVar.blocks:
-    #     if 1:
-    #         pass
-
+#-游戏内图层渲染先后(仅仅针对实体和方块)TrueRenderEngine
+def TRE():
+    if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
+        scan_x = 14 #14
+        scan_y = 9 #9
+        tmp = []
+        for i in range(len(GameVar.blocks)):
+            if GameVar.blocks[i].x >= GameVar.chars[0].x-scan_x-1 and GameVar.blocks[i].x <= GameVar.chars[0].x+scan_x and GameVar.blocks[i].z >= GameVar.chars[0].z-scan_y-1 and GameVar.blocks[i].z <= GameVar.chars[0].z+scan_y:
+                tmp.append(i)
+        for i in tmp:
+            if GameVar.blocks[i].y < GameVar.chars[0].y or GameVar.blocks[i].z >= GameVar.chars[0].z:
+                GameVar.blocks[i].trsp = 0
+                GameVar.blocks[i].paint()
+        GameVar.chars[0].paint()
+        for i in tmp:
+            if GameVar.blocks[i].y >= GameVar.chars[0].y and GameVar.blocks[i].z < GameVar.chars[0].z:
+                if (GameVar.blocks[i].y-2-GameVar.chars[0].y < (GameVar.chars[0].z - GameVar.blocks[i].z)*2/3 
+                    and GameVar.blocks[i].y+2-GameVar.chars[0].y > (GameVar.chars[0].z - GameVar.blocks[i].z)*2/3
+                    and GameVar.blocks[i].x-1 < GameVar.chars[0].x
+                    and GameVar.blocks[i].x+2 > GameVar.chars[0].x):
+                    GameVar.blocks[i].trsp = 1
+                else:
+                    GameVar.blocks[i].trsp = 0
+                GameVar.blocks[i].paint()
 
 #元素绘制总线
 def renderelement():
@@ -1323,8 +1398,7 @@ def render_window():
         if GameVar.wait == 0: #此if便于停止
             renderBG()
             renderBlocks()
-            renderChars()
-            # TrueRenderGameEngine()
+            TRE()
             renderelement()
             # renderText("PFS:%s"%BaseINF.fps,(50,255,0),255,(345,0),15,fot[1])
             #帧更新
@@ -1342,7 +1416,7 @@ def Load_():
     if Times_up(BaseINF.fpsLT,BaseINF.fpsITV):
         BaseINF.fpsLT = time.time()
         BaseINF.fps = BaseINF.tfps
-        # print(BaseINF.fps)
+        print(BaseINF.fps)
         BaseINF.tfps = 0
 
 #加入线程并启动
@@ -1353,7 +1427,7 @@ thread_render_window.start()
 #thread_render_window_2.start()
 
 #统一的终止操作(预计移除)
-def IF_END_UP_GAME():
+def IF_END_GAME():
     if GameVar.state == GameVar.STATES["END_UP"]:
         pygame.quit()
         exit()
