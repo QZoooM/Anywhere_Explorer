@@ -53,9 +53,9 @@ class BaseINF(object):
     fps = tfps = 0
     fpsLT = 0
     fpsITV = 1
-    basefam = 60 #基础帧率;;144-->6.64s;60-->7.29
+    basefam = 60 #基础帧率;;144-->6.64s;60-->7.29??
     basetick = 0 #（可能没用）
-    EnTkSpd = 1 #默认为“1”
+    EnTkSpd = 1 #(存在功能变动)
     maxtick = 10000 #默认为“10000”
     tickspeed = 100 #默认为“100”,可在游戏内更改(1~10000)
     famcount = 0 #（可能没用）
@@ -117,26 +117,57 @@ for i in raw_BG_img:
     BG_img.append(pygame.transform.scale(i,(960, 480)))
 #--方块
 BlkPth="resource/img/Block/"
-raw_Grass_img=[]
-Grass_img=[]
-raw_Grass_img.append(pygame.image.load(BlkPth+"Grass_Side.png").convert_alpha())
-raw_Grass_img.append(pygame.image.load(BlkPth+"Grass_Up.png").convert_alpha())
-Grass_img.append(pygame.transform.scale(raw_Grass_img[0],(48, 48)))
-Grass_img.append(pygame.transform.scale(raw_Grass_img[1],(48, 32)))
-raw_Stone_img=[]
-Stone_img=[]
-raw_Stone_img.append(pygame.image.load(BlkPth+"Stone_Side.png").convert_alpha())
-raw_Stone_img.append(pygame.image.load(BlkPth+"Stone_Up.png").convert_alpha())
-Stone_img.append(pygame.transform.scale(raw_Stone_img[0],(48, 48)))
-Stone_img.append(pygame.transform.scale(raw_Stone_img[1],(48, 32)))
-raw_Wood_img=[]
-Wood_img=[]
-raw_Wood_img.append(pygame.image.load(BlkPth+"Wood_Side.png").convert_alpha())
-raw_Wood_img.append(pygame.image.load(BlkPth+"Wood_Up.png").convert_alpha())
-Wood_img.append(pygame.transform.scale(raw_Wood_img[0],(48, 48)))
-Wood_img.append(pygame.transform.scale(raw_Wood_img[1],(48, 32)))
-Shadow_img=[]
-Shadow_img.append(pygame.transform.scale(pygame.image.load(BlkPth+"Shadow.png").convert_alpha(),(48, 48)))
+raw_Grass_img=[
+    pygame.image.load(BlkPth+"Grass_Side.png").convert_alpha(),
+    pygame.image.load(BlkPth+"Grass_Up.png").convert_alpha()
+]
+Grass_img=[
+    pygame.transform.scale(raw_Grass_img[0],(48, 48)),
+    pygame.transform.scale(raw_Grass_img[1],(48, 32))
+]
+raw_Stone_img=[
+    pygame.image.load(BlkPth+"Stone_Side.png").convert_alpha(),
+    pygame.image.load(BlkPth+"Stone_Up.png").convert_alpha()
+]
+Stone_img=[
+    pygame.transform.scale(raw_Stone_img[0],(48, 48)),
+    pygame.transform.scale(raw_Stone_img[1],(48, 32))
+]
+raw_Wood_img=[
+    pygame.image.load(BlkPth+"Wood_Side.png").convert_alpha(),
+    pygame.image.load(BlkPth+"Wood_Up.png").convert_alpha()
+]
+Wood_img=[
+    pygame.transform.scale(raw_Wood_img[0],(48, 48)),
+    pygame.transform.scale(raw_Wood_img[1],(48, 32))
+]
+raw_Dirt_img=[
+    pygame.image.load(BlkPth+"Dirt_Side.png").convert_alpha(),
+    pygame.image.load(BlkPth+"Dirt_Up.png").convert_alpha()
+]
+Dirt_img=[
+    pygame.transform.scale(raw_Dirt_img[0],(48, 48)),
+    pygame.transform.scale(raw_Dirt_img[1],(48, 32))
+]
+raw_Lost_img=[pygame.image.load(BlkPth+"Lost.png").convert_alpha(),]
+Lost_img=[pygame.transform.scale(raw_Lost_img[0],(48, 48)),pygame.transform.scale(raw_Lost_img[0],(48, 32))]
+Lost_img
+raw_Leaf_img=[pygame.image.load(BlkPth+"Leaf_Both.png").convert_alpha()]
+Leaf_img=[
+    pygame.transform.scale(raw_Leaf_img[0],(48, 48)),
+    pygame.transform.scale(raw_Leaf_img[0],(48, 32))
+]
+raw_Brick_img=[pygame.image.load(BlkPth+"Brick_Both.png").convert_alpha()]
+Brick_img=[
+    pygame.transform.scale(raw_Brick_img[0],(48, 48)),
+    pygame.transform.scale(raw_Brick_img[0],(48, 32))
+]
+raw_Iron_mine_img=[pygame.image.load(BlkPth+"Iron_Mine_Both.png").convert_alpha()]
+Iron_mine_img=[
+    pygame.transform.scale(raw_Iron_mine_img[0],(48, 48)),
+    pygame.transform.scale(raw_Iron_mine_img[0],(48, 32))
+]
+Shadow_img=[pygame.transform.scale(pygame.image.load(BlkPth+"Shadow.png").convert_alpha(),(48, 48))]
 #--角色
 Char00Path="resource/img/Char/"
 Char00_img=[
@@ -152,15 +183,13 @@ Slt_img=[
 ]
 #--按钮
 BtnPath="resource/img/Button/"
-empty=[pygame.image.load(BtnPath+"empty.png")]
+empty=[pygame.image.load(BtnPath+"empty.png").convert_alpha()]
 empty+=empty
-raw_Btn_img=[]
-Btn_img=[]
-raw_Btn_img.append(pygame.image.load(BtnPath+"Button0.png"))
-for i in raw_Btn_img:
-    Btn_img.append(pygame.transform.scale(i,(144, 48)))
-Btn_img.append(pygame.image.load(BtnPath+"Box_ui.png"))
-Btn_img.append(pygame.transform.scale(pygame.image.load(BtnPath+"slt_bar.png"),(36,36)))
+Btn_img=[
+    pygame.transform.scale(pygame.image.load(BtnPath+"Button0.png").convert_alpha(),(144, 48)),
+    pygame.image.load(BtnPath+"Box_ui.png").convert_alpha(),
+    pygame.transform.scale(pygame.image.load(BtnPath+"slt_bar.png").convert_alpha(),(36,36))
+]
 
 #-音频
 print('Load audio')
@@ -261,26 +290,41 @@ class Blocks(object): #48x48,46*32;x-->width,y-->height,z-->depth
         self.l_y = box[1]
         self.l_z = box[2]
         self.pt_abv = self.pt_fnt = 1 #是否绘制上or正面
-        self.trsp = 0 #是否透明上or正面
-        self.alpha = 255
+        self.trsp = 1 #是否透明
+        self.alpha = 125
         self.paint_x = (self.x - self.l_x/2+0.5)*48
         self.paint_y = BaseINF.window_y - self.y*48 - self.z*32
     def transp_proc(self):
         speed = 1
         if self.trsp == 1:
-            if self.alpha > 50:
+            if self.alpha > 100:
                 self.alpha -= 1*speed
+            # else:
+            #     if self.alpha > 80:
+            #         self.alpha -= 1*speed
         elif self.trsp == 0:
             if self.alpha < 255:
                 self.alpha += 1*speed
+    def hid_proc(self): #在加载区块时运行
+        abv = fnt = 0
+        for blk in GameVar.blocks:
+            if abv == 0:
+                if self.y == blk.y - 1 and self.z == blk.z and self.x == blk.x:
+                    self.pt_abv = 0
+                    abv = 1
+            if fnt == 0:
+                if self.z == blk.z + 1 and self.x == blk.x and self.y == blk.y:
+                    self.pt_fnt = 0
+                    fnt = 1
+            if abv == 1 and fnt == 1:
+                break
+        if abv == 0:
+            self.pt_abv = 1
+        if fnt == 0:
+            self.pt_fnt = 1
     def paint(self):
         paint_y = self.paint_y
-        if GameVar.chars[0].x <= world.T_x - 7.5 and GameVar.chars[0].x >= 7.5:
-            paint_x = self.paint_x + (-GameVar.chars[0].x+7.5)*48
-        elif GameVar.chars[0].x > world.T_x - 7.5:
-            paint_x = self.paint_x + (15 - world.T_x)*48
-        elif GameVar.chars[0].x < 7.5:
-            paint_x = self.paint_x
+        paint_x = self.paint_x + Camera.RelaPos
         if self.pt_fnt == 1:
             Shadow_img[0].set_alpha(self.alpha)
             self.surf[0].set_alpha(self.alpha)
@@ -294,10 +338,13 @@ class Blocks(object): #48x48,46*32;x-->width,y-->height,z-->depth
 class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
     basicTimeCount = 0
     def __init__(self,x,y,z,width,height,up,surf,type,life,speed=1,faceleft=0):
-        self.x = self.tx = x
+        self.x = x
         self.y = y
-        self.ty = None
-        self.z = self.tz = z
+        self.z = z
+        self.fx = floor(self.x)
+        self.fy = floor(self.y)
+        self.fz = floor(self.z)
+        self.tx = self.ty = self.tz = None
         self.box_x = 0.45
         self.box_y = 0.8
         self.box_z = 0.45
@@ -307,6 +354,7 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
         self.surf = surf
         self.shadow = pygame.Surface((self.width-1,16),pygame.SRCALPHA)
         pygame.draw.ellipse(self.shadow,(50,50,50),(0,0,self.width-1+(self.y-1)*0.4,16+(self.y-1)*0.14))
+        self.shadowLevel = None
         self.type = type
         self.life = life
         self.bkab = self.ftab = self.lfab = self.rtab = 0
@@ -318,19 +366,15 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
         self.v_x = self.v_y = self.v_z = 0
         self.hit_up = self.hit_dw = self.hit_lf = self.hit_rt = None
         self.recentBlocks = []
+        self.updateHitbox = self.updatePtShadow = 0
     def hitbox(self): #x&z碰撞判定并限定位移 (写的很糟糕，重写)
         scan = 1
-        x = floor(self.x)
-        y = floor(self.y)
-        z = floor(self.z)
-        if x!=self.tx or y!=self.ty or z!=self.tz: #载入附近方块
+        if self.updateHitbox == 1: #载入附近方块
             self.recentBlocks.clear()
             for i in GameVar.blocks:
-                if i.x >= x - scan and i.y >= y - scan and i.z >= z-scan and i.x <= x+scan and i.y <= y+scan and i.z <= z+scan:
+                if i.x >= self.fx - scan and i.y >= self.fy - scan and i.z >= self.fz-scan and i.x <= self.fx+scan and i.y <= self.fy+scan and i.z <= self.fz+scan:
                     self.recentBlocks.append(i)
-            self.tx = floor(self.x)
-            self.ty = floor(self.y)
-            self.tz = floor(self.z)
+            self.updatehitbox = 0
         #碰撞:x26,y40,z16-->x0.45,y0.8,z0.45
         #碰撞点阵箱命名规则:xyz-->ldf(左下前)
         L = self.x - self.box_x/2
@@ -489,6 +533,18 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
             # print(self.tmpList)
             # self.tmpList.clear()
             Chars.basicTimeCount = time.time()
+    def isRoughMove(self):
+        self.fx = floor(self.x)
+        self.fy = floor(self.y)
+        self.fz = floor(self.z)
+        if self.fx != self.tx or self.fz!=self.tz:
+            self.tx = self.fx
+            self.tz = self.fz
+            self.updateHitbox = 1
+            self.updatePtShadow = 1
+        if self.fy!=self.ty:
+            self.ty = self.fy
+            self.updateHitbox = 1
     def move(self):
         if self.bkab == 1:
             if self.bkuab == 0:
@@ -514,18 +570,28 @@ class Entity(object): #Whole:27x45;Head:27x21;Body:27x24.
             if self.faceleft == 1:
                 self.faceleft = 0
                 self.surf[0] = pygame.transform.flip(self.surf[0],1,0)
-        if world.T_x == -1:
-            paint_x = 360 - self.width/2
-        elif world.T_x > 15:
-            if self.x <= world.T_x - 7.5 and self.x >= 7.5:
-                paint_x = 360 - self.width/2
-            elif self.x > world.T_x - 7.5:
-                paint_x = (self.x - world.T_x + 15)*48 - self.width/2
-            elif self.x < 7.5:
-                paint_x = self.x*48 - self.width/2
-        self.shadow.set_alpha(255-(self.y-1)/32)
-        window.blit(self.shadow,(paint_x+2,BaseINF.window_y - self.z*32 - 54))
+        paint_x = self.x*48 - self.width/2 + Camera.RelaPos
+        paint_y = 0
+        self.paint_shadow(paint_x,paint_y)
         window.blit(self.surf[0],(paint_x,BaseINF.window_y - self.z*32 - (self.y-1)*48 - self.height + 1))
+    def paint_shadow(self,paint_x,paint_y):
+        if self.updatePtShadow == 1:
+            isLowLimit = 1
+            ckpos = (floor(self.x/16),floor(self.z/16))
+            for ck in world.Chuncks:
+                if ck.pos != ckpos:
+                    continue
+                for i in range(self.fy)[::-1]:
+                    if len(ck.contain[self.fz-ckpos[1]*16][i][self.fx-ckpos[0]*16]) != 0:
+                        self.shadowLevel = i
+                        isLowLimit = 0
+                        break
+                if isLowLimit == 1:
+                    self.shadowLevel = 0
+                break
+        self.shadow.set_alpha(255*(1-(self.y-self.shadowLevel)/24))
+        window.blit(self.shadow,(paint_x+2,BaseINF.window_y - self.z*32 - 6 - self.shadowLevel*48))
+        pass
 
 #--控制按钮(大类)
 class ButtonCTRL(object):
@@ -555,9 +621,14 @@ class Txts(object):
         self.fot = fot
         self.view = view
         my_font = pygame.font.Font(fot,size)
-        text = my_font.render(text,True,cl).convert_alpha()
-        self.surf = pygame.Surface(text.get_size(),pygame.SRCALPHA)
-        self.surf.blit(text,(0,0))
+        rdtext = my_font.render(text,True,cl).convert_alpha()
+        self.surf = pygame.Surface(rdtext.get_size(),pygame.SRCALPHA)
+        self.surf.blit(rdtext,(0,0))
+    def update(self):
+        my_font = pygame.font.Font(self.fot,self.size)
+        rdtext = my_font.render(self.text,True,self.cl)
+        self.surf = pygame.Surface(rdtext.get_size(),pygame.SRCALPHA)
+        self.surf.blit(rdtext,(0,0))
     def paint(self):
         self.surf.set_alpha(self.A)
         self.view.blit(self.surf,self.pos)
@@ -568,10 +639,25 @@ txts=[]
 当角色移动至离地图边界大于7.5单位距离(屏幕中央)时，角色位置锁定，地图开始移动
 但是该变量暂时由特定算法替代，故搁置
 '''
-class Camera(object):
-    def __init__(self) -> None:
-        
-        pass
+class Camera():
+    CharRelaPos = None
+    RelaPos = None
+    BgRelaPos = None
+    EntityRelaPos = None
+    def relaProc():
+        if world.T_x < 0:
+            Camera.CharRelaPos = Camera.BlocksRelaPos = (-GameVar.chars[0].x+7.5)*48
+        else:
+            if GameVar.chars[0].x < 7.5:
+                Camera.CharRelaPos = 0
+                Camera.RelaPos = 0
+            elif GameVar.chars[0].x <= world.T_x - 7.5 and GameVar.chars[0].x >= 7.5:
+                Camera.CharRelaPos = Camera.RelaPos = (-GameVar.chars[0].x+7.5)*48
+            elif GameVar.chars[0].x > world.T_x - 7.5:
+                Camera.CharRelaPos = Camera.RelaPos = (15 - world.T_x)*48
+    class Effect():
+        def vibrate():
+            k = random.randint(0,5)
 
 #存档类
 class Savings(object): #角色,背包,可用合成表信息存储在sav.dat
@@ -665,6 +751,8 @@ class World(object): #区块以及方块信息只存在于WDxxx.ck中
                                 for x in y:
                                     for blk in x:
                                         GameVar.blocks.append(blk)
+                for blk in GameVar.blocks:
+                    blk.hid_proc()
                 self.tcpos = (crx,crz) #更新缓存坐标
     def write(self):
         with open("saveport/%s/Ck/T000.ck"%GameVar.sav.FolderName,"w") as ckf:
@@ -733,27 +821,13 @@ class Chars(Entity): #Whole:27x45;Head:27x21;Body:27x24.
             if self.faceleft == 1:
                 self.faceleft = 0
                 self.surf[0] = pygame.transform.flip(self.surf[0],1,0)
-        if world.T_x == -1:
-            paint_x = 360 - self.width/2
-        elif world.T_x > 15:
-            if self.x <= world.T_x - 7.5 and self.x >= 7.5:
-                paint_x = 360 - self.width/2
-            elif self.x > world.T_x - 7.5:
-                paint_x = (self.x - world.T_x + 15)*48 - self.width/2
-            elif self.x < 7.5:
-                paint_x = self.x*48 - self.width/2
-        self.shadow.set_alpha(225*(1-(self.y-1)/32))
-        window.blit(self.shadow,(paint_x+2,BaseINF.window_y - self.z*32 - 54))
+        paint_x = self.x*48 - self.width/2 + Camera.RelaPos
+        paint_y = 0
+        self.paint_shadow(paint_x,paint_y)
         window.blit(self.surf[0],(paint_x,BaseINF.window_y - self.z*32 - (self.y-1)*48 - self.height + 1))
     def paint_slt(self):
         paint_y = BaseINF.window_y -(self.slt_pos[1]*48 + self.slt_pos[2]*32)
-        paint_x = self.slt_pos[0]*48
-        if self.x <= world.T_x - 7.5 and self.x >= 7.5:
-            paint_x += (-GameVar.chars[0].x+7.5)*48
-        elif GameVar.chars[0].x > world.T_x - 7.5:
-            paint_x += (15 - world.T_x)*48
-        elif GameVar.chars[0].x < 7.5:
-            pass
+        paint_x = self.slt_pos[0]*48 + Camera.CharRelaPos
         if self.shapab == 1:
             i = 2
         elif self.shapab == 0:
@@ -805,7 +879,6 @@ class ItemBar(object):
         self.alpha = alpha
         self.rfkey = rfkey
         self.pos = ((BaseINF.window_x-36*self.boxNum)/2,BaseINF.window_y-36)
-        #先一步存储已经渲染好的物品栏
         self.bar_surf = pygame.Surface((36*self.boxNum,36),pygame.SRCALPHA)
         self.cbox_surf = pygame.Surface((36,36),pygame.SRCALPHA)
         for i in range(0,self.boxNum):
@@ -819,7 +892,6 @@ class ItemBar(object):
                 window.blit(GameVar.chars[0].itemList[i][0].surf,(self.pos[0]+4+i*36,self.pos[1]+4))
             except:
                 window.blit(empty[0],(self.pos[0]+4+i*36,self.pos[1]+4))
-
 itembar=[]
 
 #物品
@@ -992,7 +1064,8 @@ def handle_event():
                     for ck in world.Chuncks:
                         if ck.pos == tblk.ckpos:
                             ck.contain[tblk.z-tblk.ckpos[1]*16][tblk.y][tblk.x-tblk.ckpos[0]*16].pop(0)
-                    GameVar.blocks.pop(ti)
+                    world.load_chunck(1)
+                    # GameVar.blocks.pop(ti)
                     GameVar.chars[0].ty = None
             if event.button==3:
                 if GameVar.state == GameVar.STATES["GAMING"] and gamingrd.run == 0:
@@ -1070,6 +1143,7 @@ def InGameProc():
 #碰撞侦测总线
 def check_hit():
     for i in GameVar.chars: #角色碰撞
+        i.isRoughMove()
         i.hitbox()
 
 #组件移动总线
@@ -1272,18 +1346,21 @@ class Gamingrd(object):
                     GameVar.chars[0].itemList[0].append(Items(1,-1))
                     GameVar.chars[0].itemList[1].append(Items(2,-1))
                     GameVar.chars[0].itemList[2].append(Items(3,-1))
+                    GameVar.chars[0].itemList[3].append(Items(4,-1))
+                    GameVar.chars[0].itemList[4].append(Items(5,-1))
+                    GameVar.chars[0].itemList[5].append(Items(6,-1))
+                    GameVar.chars[0].itemList[6].append(Items(7,-1))
                 exec(layout.gaming[0])
                 self.init = 1
-            elif self.init == 1:
                 self.run = 0
             if self.run == 0:
                 InGameProc()
-                try:
-                    if Times_up(self.posLastTime,self.posInterval):
-                        txts[0].text = str((floor(GameVar.chars[0].x),floor(GameVar.chars[0].y),floor(GameVar.chars[0].z)))
-                        self.posLastTime = time.time()
-                except:
-                    pass
+                # try:
+                #     if Times_up(self.posLastTime,self.posInterval):
+                #         txts[0].text = str((floor(GameVar.chars[0].x),floor(GameVar.chars[0].y),floor(GameVar.chars[0].z)))
+                #         self.posLastTime = time.time()
+                # except:
+                #     pass
             if self.tomn == 0:
                 # 此处应插入存档写入，或跳转至存档写入的步骤
                 GameVar.tmpchars += GameVar.chars
@@ -1361,6 +1438,8 @@ def TRE():
         tmp = []
         for i in range(len(GameVar.blocks)):
             if GameVar.blocks[i].x >= GameVar.chars[0].x-scan_x-1 and GameVar.blocks[i].x <= GameVar.chars[0].x+scan_x and GameVar.blocks[i].z >= GameVar.chars[0].z-scan_y-1 and GameVar.blocks[i].z <= GameVar.chars[0].z+scan_y:
+                # if GameVar.blocks[i].y >= floor(GameVar.chars[0].y)-1 and GameVar.blocks[i].y <= floor(GameVar.chars[0].y)+1 and GameVar.blocks[i].z == floor(GameVar.chars[0].z) and GameVar.blocks[i].x >= floor(GameVar.chars[0].x)-1 and GameVar.blocks[i].x <= floor(GameVar.chars[0].x)+1:
+                #     GameVar.blocks[i].pt_fnt = 1
                 tmp.append(i)
         for i in tmp:
             if GameVar.blocks[i].y < GameVar.chars[0].y or GameVar.blocks[i].z >= GameVar.chars[0].z:
@@ -1369,8 +1448,8 @@ def TRE():
         GameVar.chars[0].paint()
         for i in tmp:
             if GameVar.blocks[i].y >= GameVar.chars[0].y and GameVar.blocks[i].z < GameVar.chars[0].z:
-                if (GameVar.blocks[i].y-2-GameVar.chars[0].y < (GameVar.chars[0].z - GameVar.blocks[i].z)*2/3 
-                    and GameVar.blocks[i].y+2-GameVar.chars[0].y > (GameVar.chars[0].z - GameVar.blocks[i].z)*2/3
+                if (GameVar.blocks[i].y-2-GameVar.chars[0].y < (GameVar.chars[0].z - GameVar.blocks[i].z-1)*2/3 
+                    and GameVar.blocks[i].y+2-GameVar.chars[0].y > (GameVar.chars[0].z - GameVar.blocks[i].z-1)*2/3
                     and GameVar.blocks[i].x-1 < GameVar.chars[0].x
                     and GameVar.blocks[i].x+2 > GameVar.chars[0].x):
                     GameVar.blocks[i].trsp = 1
@@ -1390,17 +1469,19 @@ def render_control():
         menurd.render()
         savrd.render()
         gamingrd.render()
-
+fpsDis = Txts("--",(50,255,0),255,(345,0),15,fot[1])
 #-渲染窗口总线
 def render_window():
     if Times_up(BaseINF.RenderLastTime,BaseINF.RenderInterval):
         BaseINF.RenderLastTime = time.time()
         if GameVar.wait == 0: #此if便于停止
+            if GameVar.state == GameVar.STATES["GAMING"]:
+                Camera.relaProc()
             renderBG()
             renderBlocks()
             TRE()
             renderelement()
-            # renderText("PFS:%s"%BaseINF.fps,(50,255,0),255,(345,0),15,fot[1])
+            fpsDis.paint()
             #帧更新
             pygame.display.update()
             BaseINF.tfps += 1
@@ -1416,7 +1497,8 @@ def Load_():
     if Times_up(BaseINF.fpsLT,BaseINF.fpsITV):
         BaseINF.fpsLT = time.time()
         BaseINF.fps = BaseINF.tfps
-        print(BaseINF.fps)
+        fpsDis.text = "PFS:%s"%BaseINF.fps
+        fpsDis.update()
         BaseINF.tfps = 0
 
 #加入线程并启动
